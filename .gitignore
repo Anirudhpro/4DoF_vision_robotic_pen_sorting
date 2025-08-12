@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Data & logs
+*.npz
+*.pt
+*.yaml
+*.txt
+*.log
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.cache
+
+# Session folders
+.session_tmp_*
+log */
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+venv/
+
+# User-specified ignores
+ExtIntVals/
+RobotDocs/
+aruco_tag_detection.jpg
+yolo_init_model.py
+test_pixel_conversion.py
+test_coordinates.py
