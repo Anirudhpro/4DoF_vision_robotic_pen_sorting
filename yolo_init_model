@@ -4,4 +4,4 @@ rf = Roboflow(api_key="HcazfNKQmxXWjliwNW2O")
 project = rf.workspace("tbn-acjk2").project("pen-jw4m2-5zqwd")
 version = project.version(1)
 model = version.model
-model.download("pt")  # ✅ This gives you best.pt
+model.download("pt")

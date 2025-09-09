@@ -1,0 +1,4 @@
+{
+  "robot_tag_xyz": [300, 0, -57],
+  "serial_port": "/dev/tty.usbserial-210"
+}

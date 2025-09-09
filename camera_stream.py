@@ -11,6 +11,20 @@ import json
 import os
 import shutil
 from datetime import datetime
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc  # for drawing angle arcs
+plt.ion()  # enable interactive mode so plt.show() windows update live
+import io
+
+# Global visualization data containers
+sent_robot_commands = []  # appended in send_json
+_next_motion_id = 1
+_active_motion_id = None
+
+# Track indices of sent_robot_commands that belong to the active complex motion
+_current_complex_indices = []
+_complex_motion_active = False  # define before send_json references it
 
 # -------------- Utility: timestamps --------------
 def ts():
@@ -64,7 +78,8 @@ os.makedirs(logs_root, exist_ok=True)
 
 # Create a temp session dir now; will rename to 'log N' on exit.
 _session_tag = ts_for_filename()
-temp_session_dir = os.path.join(logs_root, f".session_tmp_{_session_tag}")
+# Use a non-hidden directory name so it is visible in Finder immediately
+temp_session_dir = os.path.join(logs_root, f"session_tmp_{_session_tag}")
 os.makedirs(temp_session_dir, exist_ok=True)
 
 # Open log file and tee stdout
@@ -185,8 +200,19 @@ tvec = np.array(aruco_data['tvec'][0])
 R, _ = cv2.Rodrigues(rvec)
 
 # --- Robot-to-tag transformation (update as needed) ---
-robot_tag_xyz = np.array([300, 0, -57])  # mm - robot arm position relative to ArUco tag
-robot_tag_theta = (3 * 3.14 / 2)  # radians
+# Load robot configuration
+with open('config.json') as f:
+    config = json.load(f)
+robot_tag_xyz = np.array(config['robot_tag_xyz'])  # mm - robot arm position relative to ArUco tag
+# Prefer explicit config; fall back to 270° using precise pi
+_theta_rad_cfg = config.get('robot_tag_theta_rad')
+_theta_deg_cfg = config.get('robot_tag_theta_deg')
+if _theta_rad_cfg is not None:
+    robot_tag_theta = float(_theta_rad_cfg)
+elif _theta_deg_cfg is not None:
+    robot_tag_theta = float(_theta_deg_cfg) * (np.pi / 180.0)
+else:
+    robot_tag_theta = 1.5 * np.pi
 
 def tag_to_robot(point_tag):
     theta = robot_tag_theta
@@ -298,6 +324,26 @@ def send_json(ser, cmd):
             return False
     ser.write(json.dumps(cmd).encode() + b'\n')
     print(f"[{ts()}] Sent: {json.dumps(cmd)}")
+    # Log command for visualization
+    try:
+        if cmd.get('T') == 1041 and all(k in cmd for k in ('x','y','z')):
+            # attach current active motion id (may be None)
+            mid = _active_motion_id
+            sent_robot_commands.append({
+                'ts': time.time(),
+                'x': float(cmd['x']),
+                'y': float(cmd['y']),
+                'z': float(cmd['z']),
+                't': float(cmd.get('t', 0)),
+                'raw': dict(cmd),
+                'motion_id': mid,
+                'hide': False
+            })
+            # Keep only recent N to bound memory
+            if len(sent_robot_commands) > 500:
+                del sent_robot_commands[:len(sent_robot_commands)-500]
+    except Exception as _e:
+        pass
     return True
 
 def validate_robot_coords(xyz):
@@ -332,6 +378,125 @@ def _angle_between_2d(u, v):
     dot = float(np.clip(np.dot(u, v), -1.0, 1.0))
     return float(np.arccos(dot))
 
+def _pen_radial_angle(center_xy, tip_xy):
+    """
+    Angle (0..180°) between:
+      a) center -> tip (vector a)
+      b) center -> origin (vector r)
+    Returns angle in radians (no supplemental 180° flipping).
+    """
+    c = np.asarray(center_xy, dtype=float)
+    t = np.asarray(tip_xy, dtype=float)
+    # Use center -> tip (intuitive direction for plotting)
+    a = t - c              # center -> tip
+    r = -c                 # center -> origin
+    a_len = np.linalg.norm(a)
+    r_len = np.linalg.norm(r)
+    if a_len < 1e-9 or r_len < 1e-9:
+        return 0.0
+    cos_th = float(np.clip(np.dot(a / a_len, r / r_len), -1.0, 1.0))
+    theta = float(np.arccos(cos_th))  # 0..pi
+    return theta
+
+# Helper: compute motion path points (2D XY robot coords) for visualization
+def _compute_motion_path_points(center_xy, chosen_tip_xy, color_label, pen_radial_angle_rad, tip1_xy=None, tip2_xy=None):
+    """Return a list of 2D points (robot-frame XY) representing the motion waypoints
+    that move_roArm would use for this detection. This mirrors the logic in move_roArm
+    but only for visualization (XY only)."""
+    c = np.asarray(center_xy, dtype=float)
+    tip = np.asarray(chosen_tip_xy, dtype=float)
+
+    if pen_radial_angle_rad < (np.pi / 4.0):
+        # STANDARD sequence: same waypoint logic as move_roArm
+        # Compute a 10mm perpendicular offset from center to the line defined by the two tips
+        # If tips are not provided, fall back to no offset
+        if tip1_xy is not None and tip2_xy is not None:
+            t1 = np.asarray(tip1_xy, dtype=float)[:2]
+            t2 = np.asarray(tip2_xy, dtype=float)[:2]
+            tip_vec = t2 - t1
+            if np.linalg.norm(tip_vec) >= 1e-6:
+                perp = np.array([-tip_vec[1], tip_vec[0]], dtype=float)
+                perp_unit = perp / (np.linalg.norm(perp) + 1e-9)
+                cand1 = c + perp_unit * 10.0
+                cand2 = c - perp_unit * 10.0
+                # Simple rule (same as viz & move_roArm): pick the candidate with larger Y
+                new_center = cand1 if cand1[1] > cand2[1] else cand2
+            else:
+                new_center = c.copy()
+        else:
+            new_center = c.copy()
+
+        pts = [
+            np.array([120.0, 0.0]),
+            np.array([400.0, 0.0]),
+            new_center.copy(),
+            np.array([350.0, 0.0])
+        ]
+        color_to_y = {"blue": 140, "red": 70, "green": -70, "grayscale": -140}
+        dest_y = float(color_to_y.get(color_label, 0.0))
+        pts.append(np.array([480.0, dest_y]))
+        return [p.astype(float) for p in pts]
+    else:
+        # COMPLEX path: replicate the geometric construction from move_roArm
+        originalCenter = np.array([c[0], c[1], 0.0], dtype=float)
+        radial_vec = -originalCenter[:2]
+        radial_norm = np.linalg.norm(radial_vec)
+        xprime = np.array([1.0, 0.0], dtype=float) if radial_norm < 1e-6 else (radial_vec / radial_norm)
+
+        lower_tip = np.array([tip[0], tip[1], 0.0], dtype=float)
+        center3 = originalCenter.copy()
+        # Use approach point closer to tip: 0.25*center + 0.75*chosen_tip
+        approach_pt = center3 * 0.25 + lower_tip * 0.75
+        d_ca = np.linalg.norm(approach_pt - center3)
+        dir_to_origin_xy = np.array([xprime[0], xprime[1], 0.0], dtype=float)
+        dest = center3 + dir_to_origin_xy * d_ca
+        d_ad = np.linalg.norm(approach_pt - dest)
+        v_dest_to_ap = approach_pt - dest
+        v_unit = v_dest_to_ap / (np.linalg.norm(v_dest_to_ap) + 1e-9)
+        ext_len = 2.0 * d_ad + 10.0
+        init = dest + v_unit * ext_len
+
+        total_len = np.linalg.norm(dest - init)
+        path_pts = []
+        if total_len >= 1e-6:
+            u = (dest - init) / total_len
+            closer_dest = dest - u * 10.0
+            seg_len = np.linalg.norm(closer_dest - init)
+            steps = int(seg_len // 10.0)
+            for k in range(1, steps + 1):
+                path_pts.append(init + u * (10.0 * k))
+            path_pts.append(closer_dest)
+            # If there are more than 7 path points, prune the last four to match robot/viz agreement
+            if len(path_pts) > 7:
+                path_pts = path_pts[:-4]
+
+        pts3 = [init, dest] + path_pts
+        pts2d = [np.array([p[0], p[1]], dtype=float) for p in pts3]
+        return pts2d
+
+# Helper: simple smoothing / densify of waypoint polyline for nicer curve
+def _densify_and_smooth_polyline(pts, samples=80, smooth_window=5):
+    pts = np.asarray(pts, dtype=float)
+    if pts.shape[0] < 2:
+        return pts
+    xs = pts[:, 0]
+    ys = pts[:, 1]
+    # cumulative distance param
+    d = np.sqrt(np.diff(xs)**2 + np.diff(ys)**2)
+    t = np.concatenate(([0.0], np.cumsum(d)))
+    if t[-1] == 0:
+        return pts
+    t_norm = t / t[-1]
+    t_dense = np.linspace(0.0, 1.0, samples)
+    x_dense = np.interp(t_dense, t_norm, xs)
+    y_dense = np.interp(t_dense, t_norm, ys)
+    # simple moving average smoothing
+    if smooth_window > 1:
+        kernel = np.ones(smooth_window) / float(smooth_window)
+        x_dense = np.convolve(x_dense, kernel, mode='same')
+        y_dense = np.convolve(y_dense, kernel, mode='same')
+    return np.vstack([x_dense, y_dense]).T
+
 def move_roArm(robot_targets, port):
     """
     robot_targets: list with keys 'robot_xyz','angle_deg','angle_rad','pixel',
@@ -347,8 +512,23 @@ def move_roArm(robot_targets, port):
         print(f"[{ts()}] [Robot] Could not open serial port: {e}")
         return
     for i, target in enumerate(robot_targets):
-        xyz = np.array(target['robot_xyz'], dtype=float)  # center of pen in ROBOT coords
-        angle = target['angle_deg']
+        # --- Fallback extraction to avoid KeyError ---
+        raw_xyz = target.get('robot_xyz')
+        if raw_xyz is None:
+            if all(k in target for k in ('x','y','z')):
+                raw_xyz = [target['x'], target['y'], target['z']]
+            else:
+                print(f"[{ts()}] [Robot] Target {i+1} missing robot_xyz; skipping. Keys={list(target.keys())}")
+                continue
+        try:
+            xyz = np.array(raw_xyz, dtype=float)
+        except Exception:
+            print(f"[{ts()}] [Robot] Target {i+1} invalid robot_xyz={raw_xyz}; skipping.")
+            continue
+        angle = target.get('angle_deg')
+        if angle is None:
+            # fallback to generic 'angle' if present
+            angle = target.get('angle', 0.0)
         angle_rad = float(target.get('angle_rad', np.radians(angle)))
         color_label = target.get('color', 'unknown')
 
@@ -362,108 +542,139 @@ def move_roArm(robot_targets, port):
 
         print(f"[{ts()}] [Robot] Target {i+1}: PIXEL={target.get('pixel')}, CAM={target.get('cam_xyz')}, ROBOT={xyz}, ANGLE={angle:.2f}deg, COLOR={color_label}")
 
-        # ---- Your new angle rule ----
+        # ---- Choose tip by perpendicular-to-radial rule (from previous step) ----
         tip1 = np.array(target.get('tip1_robot', xyz), dtype=float)
         tip2 = np.array(target.get('tip2_robot', xyz), dtype=float)
 
-        # Define local "down" direction from center toward origin (XY only)
-        radial_dir_xy = -xyz[:2]
-        rd_norm = np.linalg.norm(radial_dir_xy)
-        radial_unit = np.array([1.0, 0.0], dtype=float) if rd_norm < 1e-9 else (radial_dir_xy / rd_norm)
+        radial_xy = -xyz[:2]
+        rd_norm = np.linalg.norm(radial_xy)
+        rhat = np.array([1.0, 0.0], dtype=float) if rd_norm < 1e-9 else (radial_xy / rd_norm)
 
-        # Pick the tip closer toward origin relative to the center (bigger dot with radial_unit)
-        d1 = float(np.dot(tip1[:2] - xyz[:2], radial_unit))
-        d2 = float(np.dot(tip2[:2] - xyz[:2], radial_unit))
-        chosen_tip = tip1 if d1 >= d2 else tip2
-        chosen_tip_name = "tip1" if d1 >= d2 else "tip2"
+        def foot_and_score(P):
+            s = float(np.dot(P[:2] - xyz[:2], rhat))  # signed distance along radial from center
+            F = xyz[:2] + s * rhat                    # perpendicular foot on radial line
+            distF = float(np.linalg.norm(F))          # distance of that foot to origin
+            prefer_penalty = 0 if s >= 0 else 1       # prefer feet "down" toward origin
+            return F, s, distF, (prefer_penalty, distF, -s)
 
-        # Angle between: (tip -> center) and (center -> origin). Always non-negative.
-        v_tip_to_center = (xyz[:2] - chosen_tip[:2])
-        v_center_to_origin = -xyz[:2]
-        penRadialAngle = abs(_angle_between_2d(v_tip_to_center, v_center_to_origin))
+        F1, s1, dF1, score1 = foot_and_score(tip1)
+        F2, s2, dF2, score2 = foot_and_score(tip2)
+        chosen_tip = tip1 if score1 < score2 else tip2
+        chosen_tip_name = "tip1" if score1 < score2 else "tip2"
 
-        print(f"[{ts()}] [Robot] angle_between(({chosen_tip_name}->center), (center->origin))="
-              f"{np.degrees(penRadialAngle):.1f}deg | chosen_tip={chosen_tip_name}")
+        print(f"[{ts()}] [Robot] Tip selection: "
+              f"tip1(s={s1:.1f}, |F|={dF1:.1f}) vs tip2(s={s2:.1f}, |F|={dF2:.1f}) -> {chosen_tip_name}")
+
+        # ---- penRadialAngle exactly per diagram ----
+        a_len = np.linalg.norm(xyz[:2] - chosen_tip[:2])
+        penRadialAngle = _pen_radial_angle(xyz[:2], chosen_tip[:2])
+
+        print(f"[{ts()}] [Robot] penRadialAngle={np.degrees(penRadialAngle):.1f}deg "
+              f"(||tip->center||={a_len:.1f}mm; matched on radial to same length)")
+
+        # --- Shift center by 10mm perpendicular to radial direction ---
+        # Use the detected center directly; remove the 10mm perpendicular shift (no new_center)
+        originalCenter = xyz.copy()
+        radial_vec = -originalCenter[:2]
+        radial_norm = np.linalg.norm(radial_vec)
+        rhat = np.array([1.0, 0.0], dtype=float) if radial_norm < 1e-9 else (radial_vec / radial_norm)
+        perp = np.array([-rhat[1], rhat[0]])  # Perpendicular direction in XY (kept for reference)
 
         # Decide motion type
-        motion_type = "STANDARD" if penRadialAngle < (np.pi/4.0) else "COMPLEX"
+        print(penRadialAngle)
+        motion_type = "STANDARD" if penRadialAngle < (np.pi / 4.0) else "COMPLEX"
         print(f"[{ts()}] [Motion] START {motion_type} for target {i+1}")
         save_snapshot(f"motion_start_{motion_type.lower()}")
 
         if motion_type == "STANDARD":
             # STANDARD MOTION PLANNING
-            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 400, "y": 0, "z": 200, "t": 2.0});  time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": int(xyz[0]), "y": int(xyz[1]), "z": 50, "t": 2.0}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": int(xyz[0]), "y": int(xyz[1]), "z": int(xyz[2]), "t": 2.0}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": int(xyz[0]), "y": int(xyz[1]), "z": int(xyz[2]), "t": 2.95}); time.sleep(1.0)
+            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.95}); time.sleep(0.5)
+            send_json(ser, {"T": 1041, "x": 400, "y": 0, "z": 200, "t": 2.0});  time.sleep(0.9)
+            # Compute a 10mm perpendicular offset from the center to the line defined by the two tips
+            try:
+                tip1_xy = np.asarray(tip1, dtype=float)[:2]
+                tip2_xy = np.asarray(tip2, dtype=float)[:2]
+                center_xy = originalCenter[:2]
+                tip_vec = tip2_xy - tip1_xy
+                tip_len = np.linalg.norm(tip_vec)
+                if tip_len < 1e-6:
+                    # degenerate tip line -> fallback to original center
+                    chosen_xy = center_xy.copy()
+                else:
+                    # perpendicular direction to tip line
+                    perp = np.array([-tip_vec[1], tip_vec[0]], dtype=float)
+                    perp_unit = perp / (np.linalg.norm(perp) + 1e-9)
+                    cand1 = center_xy + perp_unit * 10.0
+                    cand2 = center_xy - perp_unit * 10.0
+                    # Use same simple rule as the viz: pick the candidate with larger Y
+                    chosen_xy = cand1 if cand1[1] > cand2[1] else cand2
+                new_center = np.array([float(chosen_xy[0]), float(chosen_xy[1]), float(originalCenter[2])], dtype=float)
+                print(f"[{ts()}] [Robot] STANDARD: using perpendicular offset point -> ({new_center[0]:.1f}, {new_center[1]:.1f}, {new_center[2]:.1f})")
+            except Exception as _e:
+                print(f"[{ts()}] [Robot] STANDARD: error computing perp offset, using original center: {_e}")
+                new_center = originalCenter.copy()
+
+            # Hover above the chosen pickup point, then descend
+            send_json(ser, {"T": 1041, "x": int(new_center[0]), "y": int(new_center[1]), "z": 50, "t": 2.0}); time.sleep(1.0)
+            send_json(ser, {"T": 1041, "x": int(new_center[0]), "y": int(new_center[1]), "z": int(new_center[2]), "t": 2.0}); time.sleep(1.5)
+            send_json(ser, {"T": 1041, "x": int(new_center[0]), "y": int(new_center[1]), "z": int(new_center[2]), "t": 3.0}); time.sleep(1.0)
             send_json(ser, {"T": 1041, "x": 350, "y": 0, "z": 200, "t": 2.95}); time.sleep(1.0)
             color_to_y = {"blue": 140, "red": 70, "green": -70, "grayscale": -140}
             dest_y = int(color_to_y.get(color_label, 0))
             print(f"[{ts()}] [Robot] Step 7: Routing color '{color_label}' to y={dest_y}")
-            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 100, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 80, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 80, "t": 2.0}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.8});  time.sleep(1.0)
+            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 100, "t": 3.0}); time.sleep(1.0)
+            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 60, "t": 3.0}); time.sleep(0.5)
+            send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 60, "t": 2.0}); time.sleep(0.5)
+            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.8})
         else:
+            global _complex_motion_active
+            _complex_motion_active = True
             # ===== COMPLEX MOTION =====
             print(f"[{ts()}] [Robot] Complex motion planning (angle ≥ 45°)")
-            center = xyz.copy()
-
-            # Local axis x' = center -> origin, y' = 90° ccw
+            center = originalCenter.copy()
             radial_vec = np.array([-center[0], -center[1]], dtype=float)
             radial_norm = np.linalg.norm(radial_vec)
             xprime = np.array([1.0, 0.0], dtype=float) if radial_norm < 1e-6 else radial_vec / radial_norm
-
-            # Use the SAME chosen tip we used for the angle decision
             lower_tip = chosen_tip
-
-            # Approach point: 1/4 from center, 3/4 from chosen tip
+            # Ensure lower_tip is 3D (some earlier metadata may hold 2D XY); promote if needed
+            if lower_tip.shape[0] == 2:
+                lower_tip = np.array([lower_tip[0], lower_tip[1], center[2]], dtype=float)
+            # Approach point weighting (0.75 center + 0.25 tip) with consistent 3D shapes
             approach_pt = center * 0.25 + lower_tip * 0.75
-
-            # Distance from center to approach point
             d_ca = _norm(approach_pt - center)
-
-            # Move from center toward the origin by that distance to get 'dest'
             dir_to_origin_xy = np.array([xprime[0], xprime[1], 0.0], dtype=float)
             dest = center + dir_to_origin_xy * d_ca
-
-            # Distance between approach point and dest
             d_ad = _norm(approach_pt - dest)
-
-            # Vector from dest to approach point defines the sweep direction
             v_dest_to_ap = approach_pt - dest
             v_unit, _ = _safe_unit(v_dest_to_ap)
             ext_len = 2.0 * d_ad + 10.0
             init = dest + v_unit * ext_len
 
             total_len = _norm(dest - init)
-            if total_len < 1e-6:
-                path_pts = []
-            else:
+            path_pts = []
+            if total_len >= 1e-6:
                 u, _ = _safe_unit(dest - init)
-                # Keep at least 10mm shy of dest
                 closer_dest = dest - u * 10.0
                 seg_len = _norm(closer_dest - init)
                 steps = int(seg_len // 10.0)
-                path_pts = [init + u * (10.0 * k) for k in range(1, steps + 1)]
+                for k in range(1, steps + 1):
+                    path_pts.append(init + u * (10.0 * k))
                 path_pts.append(closer_dest)
+                # If there are more than 7 path points, prune the last four as requested
+                if len(path_pts) > 7:
+                    path_pts = path_pts[:-4]
 
-            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 400, "y": 0, "z": 200, "t": 2.0});  time.sleep(1.0)
+            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.95}); time.sleep(0.5)
+            send_json(ser, {"T": 1041, "x": 400, "y": 0, "z": 200, "t": 2.0});  time.sleep(0.9)
             send_json(ser, {"T": 1041, "x": int(init[0]), "y": int(init[1]), "z": 50, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": int(init[0]), "y": int(init[1]), "z": int(xyz[2]), "t": 2.95}); time.sleep(1.0)
-
+            send_json(ser, {"T": 1041, "x": int(init[0]), "y": int(init[1]), "z": int(center[2]), "t": 2.95}); time.sleep(1.0)
             print(f"[{ts()}] [Robot] Complex path sweep: starting send_json loop with {len(path_pts)} segment(s)...")
             for p in path_pts:
-                send_json(ser, {"T": 1041, "x": int(p[0]), "y": int(p[1]), "z": int(xyz[2]), "t": 2.95})
-                time.sleep(0.15)
+                send_json(ser, {"T": 1041, "x": int(p[0]), "y": int(p[1]), "z": int(center[2]), "t": 2.95}); time.sleep(0.40)
             last_xy = path_pts[-1] if len(path_pts) else init
-            print(f"[{ts()}] [Robot] Complex path sweep: send_json loop complete. Last point used: ({int(last_xy[0])}, {int(last_xy[1])})")
-
-            send_json(ser, {"T": 1041, "x": int(last_xy[0]), "y": int(last_xy[1]), "z": 50, "t": 2.95}); time.sleep(0.2)
-            send_json(ser, {"T": 1041, "x": 380, "y": 0, "z": 200, "t": 2.95}); time.sleep(1.0)
-            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.8});  time.sleep(1.0)
+            print(f"[{ts()}] [Robot] Complex path sweep: send_json loop complete. Last point used: ({int(last_xy[0]), int(last_xy[1])})")
+            send_json(ser, {"T": 1041, "x": 380, "y": 0, "z": 200, "t": 2.95}); time.sleep(0.5)
+            send_json(ser, {"T": 1041, "x": 120, "y": 0, "z": -20, "t": 2.8});  time.sleep(0.5)
 
         # MOTION END LOG + snapshot
         print(f"[{ts()}] [Motion] END {motion_type} for target {i+1}")
@@ -471,6 +682,16 @@ def move_roArm(robot_targets, port):
 
     ser.close()
     print(f"[{ts()}] [Robot] Sequence complete.")
+    # Clear/hide sent command markers for this motion so they disappear from viz
+    try:
+        ended = _active_motion_id
+        for c in sent_robot_commands:
+            if c.get('motion_id') == ended:
+                c['hide'] = True
+    except Exception:
+        pass
+    # deactivate current motion id
+    _active_motion_id = None
 
 # --- Webcam Setup ---
 cap = cv2.VideoCapture(0)
@@ -493,14 +714,18 @@ robot_queue_lock = threading.Lock()
 
 def on_spacebar(robot_targets, trigger_source="SPACE"):
     """Kick off motion thread and record a trigger snapshot + log."""
-    global robot_thread
+    global robot_thread, _next_motion_id, _active_motion_id
     if not robot_targets:
         print(f"[{ts()}] [Robot] No confident detections to send.")
         return
     if robot_thread is not None and robot_thread.is_alive():
         print(f"[{ts()}] [Robot] Robot is busy. Wait for previous sequence to finish.")
         return
-    print(f"[{ts()}] [Trigger] {trigger_source} activated with {len(robot_targets)} target(s).")
+    # assign a new motion id and mark active so sent commands are tagged
+    motion_id = _next_motion_id
+    _next_motion_id += 1
+    _active_motion_id = motion_id
+    print(f"[{ts()}] [Trigger] {trigger_source} activated with {len(robot_targets)} target(s). (motion_id={motion_id})")
     save_snapshot(f"trigger_{trigger_source.lower()}")
     robot_thread = threading.Thread(target=move_roArm, args=(robot_targets, serial_port), daemon=True)
     robot_thread.start()
@@ -542,8 +767,352 @@ def _draw_pill_badge(img, label, enabled=True, margin=20, alpha=0.85):
     text_y = y1 + (pill_h + text_h) // 2 - 2
     cv2.putText(img, label, (text_x, text_y), font, font_scale, text_color, thickness, cv2.LINE_AA)
 
+def _create_robot_coord_plot(robot_coords, width=320, height=240):
+    """Creates a 3D scatter plot of robot coordinates and returns it as an image buffer.
+    NOTE: Use direct Y (no reversal) for horizontal axis per user request. Mapping used for plotting:
+    plot_x = y, plot_y = x, plot_z = z
+    """
+    if not robot_coords:
+        return None
+
+    fig = plt.figure(figsize=(width / 100, height / 100), dpi=100)
+    ax = fig.add_subplot(111, projection='3d')
+
+    coords = np.array(robot_coords)
+    # Use Y directly (no negation) for horizontal axis; vertical = X
+    xs = coords[:, 1]
+    ys = coords[:, 0]
+    zs = coords[:, 2]
+
+    ax.scatter(xs, ys, zs, c='r', marker='o')
+
+    ax.set_xlabel('Y (left +)', fontsize=8)
+    ax.set_ylabel('X (up +)', fontsize=8)
+    ax.set_zlabel('Z (mm)', fontsize=8)
+    ax.tick_params(axis='both', which='major', labelsize=6)
+    ax.set_title('Robot Coordinates (visual frame)', fontsize=10)
+
+    # Axis limits (Y range horizontally, X vertically)
+    ax.set_xlim([-250, 250])
+    ax.set_ylim([0, 500])
+    ax.set_zlim([-100, 450])
+    ax.view_init(elev=20., azim=-60)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
+    buf.seek(0)
+
+    img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    buf.close()
+    plot_img = cv2.imdecode(img_arr, 1)
+
+    return plot_img
+
+# Interactive matplotlib viz globals and helpers
+viz_initialized = False
+viz_fig = None
+viz_ax_xy = None
+viz_scatter_det_xy = None
+viz_radial_lines = []
+viz_tip_markers = []
+viz_txt_obj = None
+viz_angle_artists = []
+viz_motion_artists = []  # curve + moving marker + waypoints (cleared each frame)
+last_detection_metadata = []  # ensure defined before any handler references
+
+
+def init_interactive_viz():
+    """Create interactive matplotlib figure and empty artists. Call once."""
+    global viz_initialized, viz_fig, viz_ax_xy, viz_scatter_det_xy, viz_radial_lines, viz_txt_obj, viz_tip_markers, viz_angle_artists, viz_motion_artists
+    viz_fig = plt.figure(figsize=(6, 6))
+    viz_ax_xy = viz_fig.add_subplot(111)
+    viz_scatter_det_xy = viz_ax_xy.scatter([], [], c=[], s=48, edgecolors='k')
+    viz_radial_lines = []
+    viz_tip_markers = []
+    viz_angle_artists = []
+    viz_motion_artists = []
+    viz_ax_xy.set_title('XY (top-down) - visual frame')
+    viz_ax_xy.set_xlim(250, -250)
+    viz_ax_xy.set_ylim(0, 500)
+    viz_ax_xy.set_xlabel('Y (left +)')
+    viz_ax_xy.set_ylabel('X (up +)')
+    viz_ax_xy.grid(alpha=0.3)
+    viz_txt_obj = viz_fig.text(0.01, 0.01, '', va='bottom', ha='left', fontsize=8, family='monospace')
+    viz_fig.tight_layout(rect=[0, 0.05, 1, 1])
+
+    # connect key handler so space in this window triggers motion
+    def _on_viz_key(event):
+        # Allow both space (trigger) and 'u'/'U' (toggle auto) from the viz window
+        try:
+            global auto_mode
+            if event.key == ' ':  # spacebar
+                # Build robot_targets in expected structure
+                robot_targets = []
+                for d in last_detection_metadata:
+                    if d.get('pen_radial_angle_rad') is None:
+                        continue
+                    rx = d.get('robot_xyz') or [d.get('x'), d.get('y'), d.get('z')]
+                    if None in rx:
+                        continue
+                    tip1r = d.get('tip1_robot') or d.get('tip1')
+                    tip2r = d.get('tip2_robot') or d.get('tip2')
+                    robot_targets.append({
+                        'robot_xyz': rx,
+                        'angle_deg': d.get('angle_deg', d.get('angle', 0.0)),
+                        'angle_rad': d.get('angle_rad', d.get('pen_radial_angle_rad')),
+                        'pixel': d.get('pixel'),
+                        'cam_xyz': d.get('cam_xyz'),
+                        'color': d.get('color','unknown'),
+                        'tip1_robot': tip1r,
+                        'tip2_robot': tip2r,
+                    })
+                if not robot_targets:
+                    print(f"[{ts()}] [VIZ_SPACE] No valid targets to trigger.")
+                    return
+                on_spacebar(robot_targets, trigger_source="VIZ_SPACE")
+            elif event.key in ('u', 'U'):
+                auto_mode = not auto_mode
+                state = "ON" if auto_mode else "OFF"
+                print(f"[{ts()}] [VIZ_UI] Auto mode toggled {state} from viz window")
+        except Exception as e:
+            print(f"[{ts()}] Viz key handler error: {e}")
+    viz_fig.canvas.mpl_connect('key_press_event', _on_viz_key)
+
+    plt.show(block=False)
+    viz_initialized = True
+
+
+def update_interactive_viz(detections_meta, command_log):
+    """Update interactive XY plot. Only most recent complex path is shown (no buildup)."""
+    global viz_initialized, viz_fig, viz_ax_xy, viz_scatter_det_xy, viz_radial_lines, viz_txt_obj, viz_tip_markers, viz_angle_artists, viz_motion_artists
+    if not viz_initialized:
+        init_interactive_viz()
+
+    # Map coordinates for scatter (plot_x = y, plot_y = x)
+    det_x = [d['y'] for d in detections_meta]
+    det_y = [d['x'] for d in detections_meta]
+    det_c = [d.get('color', 'grayscale') for d in detections_meta]
+
+    # Defensive: remove any stray Line2D artists left on the axes (fixes persistent red Xs)
+    try:
+        for ln in list(viz_ax_xy.lines):
+            try:
+                ln.remove()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    base_rgb = {
+        'blue': (0.0, 0.34, 0.95),
+        'red': (0.9, 0.1, 0.1),
+        'green': (0.0, 0.6, 0.0),
+        'grayscale': (0.5, 0.5, 0.5)
+    }
+    occurrences = {}
+    shaded_colors = []
+    for c in det_c:
+        occurrences[c] = occurrences.get(c, 0) + 1
+        idx = occurrences[c] - 1
+        base = base_rgb.get(c, (0.4, 0.4, 0.4))
+        factor = 0.0 if idx == 0 else min(0.75, 0.25 + 0.15 * idx)
+        r, g, b = base
+        shade = (r + (1 - r) * factor, g + (1 - g) * factor, b + (1 - b) * factor)
+        shaded_colors.append(shade)
+    det_colors = shaded_colors
+
+    if det_x:
+        viz_scatter_det_xy.set_offsets(np.c_[det_x, det_y])
+        viz_scatter_det_xy.set_color(det_colors)
+    else:
+        viz_scatter_det_xy.set_offsets(np.empty((0, 2)))
+        viz_scatter_det_xy.set_color([])
+
+    # Remove previous frame artists (complete flush)
+    for coll in (viz_radial_lines, viz_tip_markers, viz_angle_artists, viz_motion_artists):
+        for art in coll:
+            try: art.remove()
+            except Exception: pass
+    viz_radial_lines = []
+    viz_tip_markers = []
+    viz_angle_artists = []
+    viz_motion_artists = []
+
+    # Radial lines
+    for (x, y, c) in zip(det_x, det_y, det_colors):
+        try:
+            ln, = viz_ax_xy.plot([0.0, x], [0.0, y], linestyle='--', color=c, linewidth=1.0, alpha=0.9)
+            viz_radial_lines.append(ln)
+        except Exception:
+            pass
+
+    t_now = time.time()
+    blink_alpha = 0.5 + 0.5 * np.sin(t_now * 6.0)
+
+    # Tip markers
+    for det, c in zip(detections_meta, det_colors):
+        tip1 = det.get('tip1'); tip2 = det.get('tip2'); chosen = det.get('chosen_tip')
+        if tip1 and tip2:
+            t1x, t1y = tip1[1], tip1[0]
+            t2x, t2y = tip2[1], tip2[0]
+            alpha_norm = 0.95
+            try:
+                mk1, = viz_ax_xy.plot(t1x, t1y, '*', markersize=10, color=c, alpha=(blink_alpha if chosen == 'tip1' else alpha_norm), markeredgecolor='k')
+                mk2, = viz_ax_xy.plot(t2x, t2y, '*', markersize=10, color=c, alpha=(blink_alpha if chosen == 'tip2' else alpha_norm), markeredgecolor='k')
+                viz_tip_markers.extend([mk1, mk2])
+            except Exception:
+                pass
+
+    drawn_complex_path = False
+
+    for det, c in zip(detections_meta, det_colors):
+        try:
+            pra_rad = det.get('pen_radial_angle_rad')
+            if pra_rad is None:
+                pra_deg_fallback = det.get('pen_radial_angle_deg')
+                if pra_deg_fallback is None:
+                    continue
+                pra_rad = np.radians(float(pra_deg_fallback))
+            pra_rad = float(pra_rad)
+            pra_deg = np.degrees(pra_rad)
+            cx_r, cy_r = det['x'], det['y']
+            cx_p, cy_p = cy_r, cx_r
+            chosen = det.get('chosen_tip'); tip1 = det.get('tip1'); tip2 = det.get('tip2')
+            if not tip1 or not tip2:
+                continue
+            chosen_tip_xy = tip1 if chosen == 'tip1' else tip2
+            v_tip = np.array([chosen_tip_xy[0] - cx_r, chosen_tip_xy[1] - cy_r], float)
+            v_orig = np.array([-cx_r, -cy_r], float)
+            if np.linalg.norm(v_tip) < 1e-6 or np.linalg.norm(v_orig) < 1e-6:
+                continue
+            u1 = v_tip / np.linalg.norm(v_tip); u2 = v_orig / np.linalg.norm(v_orig)
+            u1p = np.array([u1[1], u1[0]]); u2p = np.array([u2[1], u2[0]])
+            ang1 = np.degrees(np.arctan2(u1p[1], u1p[0])); ang2 = np.degrees(np.arctan2(u2p[1], u2p[0]))
+            diff = (ang2 - ang1 + 360) % 360
+            if diff > 180:
+                ang1, ang2 = ang2, ang1
+            age = t_now - float(det.get('ts', t_now))
+            decay = max(0.0, 1.0 - age / 1.0)
+            LIVE_AGE_THRESHOLD = 0.25
+            radius = min(35.0, max(18.0, 0.25 * np.linalg.norm([cx_r, cy_r])))
+            arc_alpha = 0.6 * (decay if pra_rad >= (np.pi/4.0) else 1.0)
+            arc = Arc((cx_p, cy_p), 2*radius, 2*radius, angle=0, theta1=ang1, theta2=ang2, color=c, lw=1.2, alpha=arc_alpha)
+            viz_ax_xy.add_patch(arc); viz_angle_artists.append(arc)
+            ray_alpha = 0.75 * (decay if pra_rad >= (np.pi/4.0) else 1.0)
+            r1, = viz_ax_xy.plot([cx_p, cx_p + u1p[0]*radius], [cy_p, cy_p + u1p[1]*radius], color=c, lw=1.0, alpha=ray_alpha)
+            r2, = viz_ax_xy.plot([cx_p, cx_p + u2p[0]*radius], [cy_p, cy_p + u2p[1]*radius], color=c, lw=1.0, alpha=ray_alpha)
+            viz_angle_artists.extend([r1, r2])
+            bis = u1 + u2
+            if np.linalg.norm(bis) < 1e-6: bis = u1
+            bis /= np.linalg.norm(bis); bis_p = np.array([bis[1], bis[0]])
+            tx = cx_p + bis_p[0]*radius*0.75; ty = cy_p + bis_p[1]*radius*0.75
+            txt = viz_ax_xy.text(tx, ty, f"{pra_deg:.0f}°", color=c, fontsize=8, ha='center', va='center',
+                                 bbox=dict(boxstyle='round,pad=0.2', fc='white', ec=c, alpha=0.6))
+            viz_angle_artists.append(txt)
+
+            # Complex path (only one, only live)
+            if (not drawn_complex_path) and pra_rad >= (np.pi/4.0) and age <= LIVE_AGE_THRESHOLD:
+                motion_pts = _compute_motion_path_points(np.array([cx_r, cy_r]), chosen_tip_xy, det.get('color','grayscale'), pra_rad)
+                if motion_pts:
+                    # Removed smooth/densified curve drawing — draw only waypoint markers for clarity
+                    # Waypoint markers with progressive alpha (start faint -> end opaque) to show direction
+                    n_wp = len(motion_pts)
+                    for wi, mp in enumerate(motion_pts):
+                        mx, my = mp[0], mp[1]
+                        progress = wi / (n_wp - 1) if n_wp > 1 else 1.0
+                        # alpha scales with progress; endpoints still orange
+                        if wi in (0, n_wp-1):
+                            col = 'orange'; msize = 7; a = 0.95 * decay
+                        else:
+                            col = 'yellow'; msize = 5; a = (0.25 + 0.7 * progress) * decay  # fade-in along path
+                        try:
+                            wp, = viz_ax_xy.plot(my, mx, 'o', color=col, markersize=msize, alpha=a, markeredgecolor='k')
+                            viz_motion_artists.append(wp)
+                        except Exception:
+                            pass
+                    drawn_complex_path = True
+
+            mode_label = 'COMPLEX' if pra_rad >= (np.pi/4.0) else 'STANDARD'
+            # when motion will be STANDARD, compute the perpendicular 10mm offset used in move_roArm
+            if mode_label == "STANDARD":
+                try:
+                    # get tip coordinates (fall back to detection tips or centers)
+                    t1 = np.asarray(det.get('tip1_robot') or det.get('tip1') or [det.get('x'), det.get('y')], dtype=float)[:2]
+                    t2 = np.asarray(det.get('tip2_robot') or det.get('tip2') or [det.get('x'), det.get('y')], dtype=float)[:2]
+                    center_xy = np.array([cx_r, cy_r], dtype=float)
+                    tip_vec = t2 - t1
+                    if np.linalg.norm(tip_vec) < 1e-6:
+                        chosen_xy = center_xy.copy()
+                    else:
+                        perp = np.array([-tip_vec[1], tip_vec[0]], dtype=float)
+                        perp_unit = perp / (np.linalg.norm(perp) + 1e-9)
+                        # use 10mm offset (robot-frame mm) to match move_roArm
+                        cand1 = center_xy + perp_unit * 10.0
+                        cand2 = center_xy - perp_unit * 10.0
+                        # Prefer the candidate with the larger Y in robot coordinates
+                        # (use robot-frame tip coordinates when available)
+                        if cand1[1] > cand2[1]:
+                            chosen_xy = cand1
+                        else:
+                            chosen_xy = cand2
+                    # plot as a small cyan square (map plot_x=y, plot_y=x)
+                    try:
+                        sq, = viz_ax_xy.plot(chosen_xy[1], chosen_xy[0], marker='s', color='cyan', markersize=6, markeredgecolor='k')
+                        viz_motion_artists.append(sq)
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+
+            lbl_col = 'red' if mode_label == 'COMPLEX' else 'green'
+            ml = viz_ax_xy.text(cx_p + 8, cy_p + 8, mode_label, color=lbl_col, fontsize=8, weight='bold')
+            viz_angle_artists.append(ml)
+        except Exception:
+            continue
+
+    # Optionally show last sent command as a red X (but only recent ones)
+    if command_log:
+        # show only recent, non-hidden commands and fade them out over 1s
+        CMD_MARKER_LIFETIME = 1.0  # seconds
+        recent_cmds = [c for c in command_log if not c.get('hide') and (t_now - float(c.get('ts', t_now)) <= CMD_MARKER_LIFETIME)]
+        for c in recent_cmds:
+            age = t_now - float(c.get('ts', t_now))
+            alpha = max(0.0, 1.0 - (age / CMD_MARKER_LIFETIME))
+            try:
+                # store artist so it can be removed on next frame
+                art, = viz_ax_xy.plot(c['y'], c['x'], marker='x', color=(1.0, 0.0, 0.0, alpha), markersize=8)
+                viz_motion_artists.append(art)
+            except Exception:
+                try:
+                    art, = viz_ax_xy.plot(c['y'], c['x'], marker='x', color='red', markersize=8)
+                    viz_motion_artists.append(art)
+                except Exception:
+                    pass
+
+    lines = []
+    if detections_meta:
+        lines.append(f"Detections: {len(detections_meta)}")
+        for i, d in enumerate(detections_meta[:6]):
+            lines.append(f"D{i+1}: X={d['x']:.0f} Y={d['y']:.0f} Z={d['z']:.0f} {d.get('color','')} PR={d.get('pen_radial_angle_deg','?')}°")
+    if command_log:
+        lines.append(f"Cmds sent: {len(command_log)} (last 1)")
+        last = command_log[-1]
+        lines.append(f"Last: ({last['x']:.0f},{last['y']:.0f},{last['z']:.0f}) t={last['t']:.2f}")
+    viz_txt_obj.set_text('\n'.join(lines))
+
+    try:
+        viz_fig.canvas.draw_idle(); viz_fig.canvas.flush_events()
+    except Exception:
+        viz_initialized = False
+
+# Replace the older OpenCV-based viz update with interactive updater in the main loop
 # Auto mode state
 auto_mode = False
+show_plot = False
+# NEW toggle + frame counter for separate viz window
+show_viz_window = True
+_frame_counter = 0
 last_auto_trigger_time = 0.0
 AUTO_COOLDOWNSEC = 2.0  # prevent rapid re-triggering
 
@@ -589,6 +1158,9 @@ try:
 
         # --- Collect filtered detections (conf >= 0.7 and center outside top 20%) ---
         detections_for_this_frame = []
+        robot_coords_for_plot = []
+    # metadata list for visualization
+        detection_metadata = []
         if getattr(r0, "obb", None) is not None and r0.obb.xywhr is not None:
             xywhr = r0.obb.xywhr
             confs = r0.obb.conf if hasattr(r0.obb, "conf") else None
@@ -636,6 +1208,7 @@ try:
                 point_cam = t_param * ray_cam
                 point_tag = R.T @ (point_cam - X0)
                 point_robot = tag_to_robot(point_tag * 1000)
+                robot_coords_for_plot.append(point_robot)
 
                 pixel_to_mm_scale = t_param * 1000
                 width_mm = (w_i * pixel_to_mm_scale) / K[0, 0]
@@ -643,12 +1216,35 @@ try:
 
                 # Short-edge midpoints
                 tip_mid_px1, tip_mid_px2 = centers_of_short_edges(corners)
-                cv2.circle(annotated, (int(tip_mid_px1[0]), int(tip_mid_px1[1])), 4, (0, 255, 255), -1)
-                cv2.circle(annotated, (int(tip_mid_px2[0]), int(tip_mid_px2[1])), 4, (0, 255, 255), -1)
-
-                # To robot
                 tip1_robot = pixel_to_robot(tip_mid_px1)
                 tip2_robot = pixel_to_robot(tip_mid_px2)
+
+                # --- Compute penRadialAngle and chosen tip (same logic as move_roArm) ---
+                center_xy = point_robot[:2]
+                tip1_xy = tip1_robot[:2]
+                tip2_xy = tip2_robot[:2]
+                radial_xy = -center_xy
+                rd_norm = np.linalg.norm(radial_xy)
+                rhat = np.array([1.0, 0.0], dtype=float) if rd_norm < 1e-9 else (radial_xy / rd_norm)
+                def foot_and_score(P):
+                    s = float(np.dot(P - center_xy, rhat))
+                    F = center_xy + s * rhat
+                    distF = float(np.linalg.norm(F))
+                    prefer_penalty = 0 if s >= 0 else 1
+                    return F, s, distF, (prefer_penalty, distF, -s)
+                F1, s1, dF1, score1 = foot_and_score(tip1_xy)
+                F2, s2, dF2, score2 = foot_and_score(tip2_xy)
+                chosen_tip_xy = tip1_xy if score1 < score2 else tip2_xy
+                chosen_tip_robot = tip1_robot if score1 < score2 else tip2_robot
+                chosen_tip_name = "tip1" if score1 < score2 else "tip2"
+                penRadialAngle = _pen_radial_angle(center_xy, chosen_tip_xy)
+                penRadialAngle_deg = np.degrees(penRadialAngle)
+
+                # Draw tips: chosen tip in green, other in yellow
+                tip1_color = (0,255,0) if chosen_tip_name == "tip1" else (0,255,255)
+                tip2_color = (0,255,0) if chosen_tip_name == "tip2" else (0,255,255)
+                cv2.circle(annotated, (int(tip_mid_px1[0]), int(tip_mid_px1[1])), 4, tip1_color, -1)
+                cv2.circle(annotated, (int(tip_mid_px2[0]), int(tip_mid_px2[1])), 4, tip2_color, -1)
 
                 # Color inside OBB
                 color_label = _classify_color_in_polygon(frame, corners)
@@ -659,10 +1255,12 @@ try:
                 line2 = (f"Robot:({point_robot[0]:.0f},{point_robot[1]:.0f},{point_robot[2]:.0f})mm "
                          f"| TipsRobot:({tip1_robot[0]:.0f},{tip1_robot[1]:.0f},{tip1_robot[2]:.0f})/"
                          f"({tip2_robot[0]:.0f},{tip2_robot[1]:.0f},{tip2_robot[2]:.0f})mm")
+                line3 = (f"penRadialAngle: {penRadialAngle:.2f} rad / {penRadialAngle_deg:.1f} deg (chosen: {chosen_tip_name})")
 
                 base_x, base_y = cx_i - 100, max(20, cy_i - 20)
                 cv2.putText(annotated, line1, (base_x, base_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
                 cv2.putText(annotated, line2, (base_x, base_y + 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+                cv2.putText(annotated, line3, (base_x, base_y + 36), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
                 detections_for_this_frame.append({
                     'robot_xyz': point_robot,
@@ -677,6 +1275,21 @@ try:
                     'tip1_robot': tip1_robot.astype(float),
                     'tip2_robot': tip2_robot.astype(float),
                 })
+                detection_metadata.append({
+                    'x': float(point_robot[0]),
+                    'y': float(point_robot[1]),
+                    'z': float(point_robot[2]),
+                    'color': color_label,
+                    'angle': float(angle_deg),
+                    'tip1': [float(tip1_robot[0]), float(tip1_robot[1])],
+                    'tip2': [float(tip2_robot[0]), float(tip2_robot[1])],
+                    'chosen_tip': chosen_tip_name,
+                    'pen_radial_angle_rad': float(penRadialAngle),  # ensure radians stored
+                    'pen_radial_angle_deg': float(penRadialAngle_deg),  # convenience (derived)
+                    'ts': time.time(),  # timestamp for fade/cooldown
+                })
+    # update global last_detection_metadata
+        last_detection_metadata = detection_metadata
 
         # --- Draw coordinate frame and info ---
         cv2.arrowedLine(annotated, (30, 30), (80, 30), (0, 0, 255), 2)  # X-axis (right)
@@ -686,8 +1299,16 @@ try:
         cv2.putText(annotated, f"Resolution: {w_frame}x{h_frame}", (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(annotated, "0 rads @ axis", (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
+        # --- Overlay plot if enabled ---
+        if show_plot:
+            plot_img = _create_robot_coord_plot(robot_coords_for_plot)
+            if plot_img is not None:
+                h_plot, w_plot = plot_img.shape[:2]
+                # Position at bottom-right corner
+                annotated[h_frame - h_plot:h_frame, w_frame - w_plot:w_frame] = plot_img
+
         # --- Auto/Space badge ---
-        _draw_pill_badge(annotated, "AUTO" if auto_mode else "SPACE", enabled=auto_mode, margin=20)
+        _draw_pill_badge(annotated, "AUTO" if auto_mode else "SPACE", enabled=auto_mode, margin=20, alpha=0.85)
 
         # Update cached annotated (final UI frame) for snapshots
         with latest_lock:
@@ -709,6 +1330,13 @@ try:
 
         # Show UI
         cv2.imshow("Pen Detection", annotated)
+        # Update the matplotlib viz every frame to match the video/frame rate
+        if show_viz_window:
+            try:
+                update_interactive_viz(last_detection_metadata, sent_robot_commands)
+            except Exception as e:
+                print(f"[{ts()}] Viz update error: {e}")
+        _frame_counter += 1
 
         # Auto trigger if enabled
         maybe_auto_trigger(detections_for_this_frame)
@@ -723,6 +1351,14 @@ try:
             auto_mode = not auto_mode
             state = "ON" if auto_mode else "OFF"
             print(f"[{ts()}] [UI] Auto mode toggled {state}")
+        elif key == ord('p'):
+            show_plot = not show_plot
+            state = "ON" if show_plot else "OFF"
+            print(f"[{ts()}] [UI] Plot overlay toggled {state}")
+        elif key == ord('v'):
+            show_viz_window = not show_viz_window
+            state = "ON" if show_viz_window else "OFF"
+            print(f"[{ts()}] [UI] Separate viz window toggled {state}")
 
 except KeyboardInterrupt:
     print(f"\n[{ts()}] KeyboardInterrupt received. Shutting down...")
@@ -739,6 +1375,7 @@ finally:
         pass
 
     # 2) Wait for robot thread to finish so it won't print after log closes
+
     try:
         if robot_thread and robot_thread.is_alive():
             print(f"[{ts()}] Waiting for robot thread to finish...")
