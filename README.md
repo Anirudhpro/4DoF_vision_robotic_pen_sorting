@@ -18,11 +18,11 @@
 
 ---
 
-## 🎯 Project Description
+## Project Description
 
 This project demonstrates how cost-effective 4 DoF robotic arms can perform manipulation tasks typically requiring expensive 6 DoF systems by leveraging **visual intelligence** and **intelligent motion planning**. The system uses a custom-trained YOLOv8 Oriented Bounding Box (OBB) model to detect writing utensils, converts pixel coordinates into real-world robot coordinates through precise calibration, and executes sophisticated pick-and-place operations.
 
-### 🔬 Research Questions & Objectives
+### Research Questions & Objectives
 
 **Primary Research Question**: How can more affordable 4 DoF robotic arms perform movements and tasks usually meant for higher DoF arms using visual intelligence?
 
@@ -33,7 +33,7 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 - Achieve reliable object manipulation through perception-guided nudging
 - Create comprehensive logging and visualization system for research reproducibility
 
-### 🚀 Key Features & Technologies
+### Key Features & Technologies
 
 **Computer Vision Pipeline**:
 - Custom YOLOv8 OBB model trained on 330 annotated writing utensil images
@@ -66,7 +66,7 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 - **Serial JSON**: Simple, reliable robot communication protocol
 - **Python**: Rapid prototyping with rich scientific computing ecosystem
 
-### 🏗️ Challenges Solved & Future Improvements
+### Challenges Solved & Future Improvements
 
 **Challenges Addressed**:
 - Mechanical limitations of 4 DoF systems through intelligent software
@@ -80,27 +80,17 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 - Global shutter camera upgrade for improved accuracy
 - Adaptive sweep parameters based on object properties
 
-> **Research Documentation**: The complete research methodology, experimental results, and technical analysis are detailed in `Polygence_Research_Report.pdf` included in this repository.
+<!-- Research documentation reference removed -->
 
 ---
 
-## 👥 Authors and Contributions
-
-- **Primary Author**: [Anirudh Rangarajan](https://github.com/Anirudhpro) - System architecture, computer vision pipeline, calibration system, motion planning algorithms, visualization framework, and documentation
-- **Research Mentor**: Bibit Bianchini - Research guidance and methodology
-
-**Contact Information**:
-- GitHub: [@Anirudhpro](https://github.com/Anirudhpro)
-- Project Repository: [4DoF_vision_robotic_pen_sorting](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting)
-
-For questions, bug reports, or collaboration inquiries, please [open an issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues).
+<!-- Authors and contact information removed -->
 
 ---
-
-## 📋 Table of Contents
+## Table of Contents
 
 - [🎯 Project Description](#-project-description)
-- [👥 Authors and Contributions](#-authors-and-contributions)
+<!-- Authors entry removed from TOC -->
 - [📊 Data and File Overview](#-data-and-file-overview)
 - [🛠️ Installation & Prerequisites](#️-installation--prerequisites)
 - [🎯 Calibration Workflow](#-calibration-workflow)
@@ -110,73 +100,11 @@ For questions, bug reports, or collaboration inquiries, please [open an issue](h
 - [📄 License](#-license)
 - [📚 Citation](#-citation)
 - [🙏 Acknowledgments](#-acknowledgments)
-- [🤝 Contributing](#-contributing)
+<!-- Contributing section intentionally removed -->
 - [🧪 Tests](#-tests)
 
----
 
-## 📊 Data and File Overview
-
-### 🗂️ Core System Files
-
-| File | Purpose | Input | Output |
-|------|---------|-------|--------|
-| `camera_stream.py` | **Main Pipeline** - Real-time detection, coordinate transformation, visualization, robot control | Webcam feed, calibration data | Robot commands, session logs, MP4 |
-| `camera_calibrate.py` | **Intrinsic Calibration** - Estimates camera matrix and distortion from checkerboard | `CalibrationPictures/*.jpg` | `calib_data.npz`, annotated images |
-| `aruco_pose.py` | **Extrinsic Calibration** - ArUco pose estimation for world alignment | Webcam, `calib_data.npz` | `Aruco/aruco_reference.json` |
-| `full_run.py` | **Orchestrator** - End-to-end pipeline automation with serial testing | `config.json` | Complete system execution |
-
-### 📁 Directory Structure
-
-```
-📦 4DoF_vision_robotic_pen_sorting/
-├── 📄 camera_stream.py              # Main real-time pipeline
-├── 📄 camera_calibrate.py           # Checkerboard calibration
-├── 📄 aruco_pose.py                 # ArUco pose estimation
-├── 📄 full_run.py                   # Pipeline orchestrator
-├── 📄 requirements.txt              # Python dependencies
-├── 📄 config.json                   # Local configuration
-├── 📄 calib_data.npz               # Camera intrinsics (generated)
-├── 📄 Polygence_Research_Report.pdf # Comprehensive research documentation
-├── 📁 CalibrationPictures/          # Checkerboard calibration images
-│   ├── 1.jpg, 2.jpg, ..., 16.jpg   # Sample calibration dataset
-├── 📁 CalibratedLinePictures/       # Annotated calibration outputs
-│   ├── calib_01.jpg, ..., calib_16.jpg
-├── 📁 Aruco/                        # ArUco calibration assets
-│   ├── aruco_reference.json         # World-to-robot transformation
-│   └── aruco_calibration.jpg        # Reference tag image
-├── 📁 Pens.v1-roboflow-instant-1--eval-.yolov8-obb/ # Training dataset
-│   ├── data.yaml                    # Dataset configuration
-│   ├── train/, valid/, test/        # Annotated image sets
-├── 📁 yolo_init_model/              # Model initialization
-├── 📄 yolov8n.pt, yolov8n-obb.pt   # Pre-trained weights
-├── 📁 ResearchDataset/              # Runtime session logs
-│   └── log_N/                       # Individual experiment sessions
-├── 📁 RoArm/                        # Robot control utilities
-│   ├── serial_simple_ctrl.py        # Direct serial interface
-│   └── *.py                         # Additional robot scripts
-└── 📁 runs/                         # YOLO training outputs
-```
-
-### 📈 Data Generation & Processing Pipeline
-
-**Calibration Data**:
-1. **Checkerboard Images**: 20-30 diverse viewpoint captures → `camera_calibrate.py` → `calib_data.npz` (camera matrix K, distortion coefficients)
-2. **ArUco Detection**: Live webcam → `aruco_pose.py` → `Aruco/aruco_reference.json` (world pose rvec/tvec)
-
-**Training Data**:
-- **YOLOv8 Dataset**: 330 manually annotated writing utensil images with oriented bounding boxes
-- **Roboflow Integration**: Automated data augmentation and train/validation splits
-
-**Runtime Data**:
-- **Session Logs**: Timestamped directories with MP4 recordings, snapshots, coordinate logs
-- **Motion Artifacts**: Detailed command sequences, coordinate transformations, decision logs
-
----
-
-## 🛠️ Installation & Prerequisites
-
-### 📋 System Requirements
+### System Requirements
 
 - **Python**: 3.10+ (recommended)
 - **Operating System**: macOS/Linux (tested on macOS)
@@ -185,7 +113,7 @@ For questions, bug reports, or collaboration inquiries, please [open an issue](h
   - RoArm-M2-S 4 DoF robotic arm with serial interface
   - Serial device path (e.g., `/dev/tty.usbserial-XXXX` on macOS)
 
-### 🔧 Dependencies
+### Dependencies
 
 Install the complete environment:
 
@@ -207,26 +135,26 @@ pip install -r requirements.txt
 - `serial`: Robot communication
 - `json`: Configuration and data serialization
 
-### ⚙️ Local Configuration
+### Local Configuration
 
 Create `config.json` for your hardware setup:
 
 ```json
 {
   "serial_port": "/dev/tty.usbserial-XXXX",
-  "robot_tag_xyz": [120, 0, -20]
+    "robot_tag_xyz": [300, 0, -57]
 }
 ```
 
 **Configuration Parameters**:
 - `serial_port`: Your robot's serial device path
-- `robot_tag_xyz`: Robot home position coordinates [x, y, z] in mm
+- `robot_tag_xyz`: Arm pose relative to the ArUco tag (pre-calibration) coordinates [x, y, z] in mm
 
 ---
 
-## 🎯 Calibration Workflow
+## Calibration Workflow
 
-### 1️⃣ Camera Intrinsics (Checkerboard Method)
+### 1. Camera Intrinsics (Checkerboard Method)
 
 **Script**: `camera_calibrate.py`  
 **Method**: Zhang's calibration with checkerboard pattern
@@ -241,7 +169,7 @@ SQUARE_SIZE = 22         # Square size in mm (measured)
 
 ```bash
 # 1. Capture calibration images
-# Place 20-30 checkerboard images in CalibrationPictures/
+# Place 100+ checkerboard images in CalibrationPictures/ (we used 100+ images in our experiments)
 # Ensure varied orientations and good corner coverage
 
 # 2. Run calibration
@@ -259,7 +187,7 @@ python camera_calibrate.py
 - **Good**: Sharp corners, varied poses, minimal reprojection error
 - **Poor**: Motion blur, limited angles, high distortion
 
-### 2️⃣ World Alignment (ArUco Method)
+### 2. World Alignment (ArUco Method)
 
 **Script**: `aruco_pose.py`  
 **Method**: ArUco tag pose estimation for extrinsic calibration
@@ -305,9 +233,9 @@ python aruco_pose.py
 
 ---
 
-## 🚀 Running the System
+## Running the System
 
-### ⚡ Quick Start (Direct Execution)
+### Quick Start (Direct Execution)
 
 For immediate testing with existing calibration:
 
@@ -322,7 +250,7 @@ python camera_stream.py /dev/tty.usbserial-123 ResearchDataset
 - `<serial_port>` (required): Robot serial device path
 - `[logs_directory]` (optional): Session data storage (default: `ResearchDataset`)
 
-### 🔄 Orchestrated Execution (Full Pipeline)
+### Orchestrated Execution (Full Pipeline)
 
 For complete automated workflow:
 
@@ -360,7 +288,7 @@ python full_run.py
    - Launches main detection pipeline
    - Begins autonomous operation
 
-### 🎮 User Interface & Controls
+### User Interface & Controls
 
 **OpenCV Window ("Pen Detection")**:
 - **SPACE**: Trigger motion for current detections
@@ -384,7 +312,7 @@ python full_run.py
 
 ---
 
-## 📖 Usage Instructions & Examples
+## Usage Instructions & Examples
 
 ### 🎯 Object Detection & Classification
 
@@ -827,16 +755,4 @@ python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 
 ---
 
-<div align="center">
-
-## 🌟 Star This Repository
-
-If this project helped your research or inspired your work, please consider giving it a star! ⭐
-
-**[⬆️ Back to Top](#4dof-vision-robotic-pen-sorting)**
-
----
-
-*This project demonstrates the power of combining computer vision, intelligent software design, and cost-effective hardware to solve complex manipulation tasks. We hope it inspires further research in accessible robotics and practical AI applications.*
-
-</div>
+<!-- Star section removed -->
