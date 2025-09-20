@@ -89,20 +89,8 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 ---
 ## Table of Contents
 
-- [🎯 Project Description](#-project-description)
-<!-- Authors entry removed from TOC -->
-- [📊 Data and File Overview](#-data-and-file-overview)
-- [🛠️ Installation & Prerequisites](#️-installation--prerequisites)
-- [🎯 Calibration Workflow](#-calibration-workflow)
-- [🚀 Running the System](#-running-the-system)
-- [📖 Usage Instructions & Examples](#-usage-instructions--examples)
-- [🔬 Research Methodology & Results](#-research-methodology--results)
-- [📄 License](#-license)
-- [📚 Citation](#-citation)
-- [🙏 Acknowledgments](#-acknowledgments)
-<!-- Contributing section intentionally removed -->
-- [🧪 Tests](#-tests)
-
+<!-- removed old emoji TOC entries; icons listed below -->
+<!-- Original emoji TOC removed; icons used below -->
 - <img src="/assets/icons/project.svg" width="18" height="18" alt="project"/> Project Description
 - <img src="/assets/icons/data.svg" width="18" height="18" alt="data"/> Data and File Overview
 - <img src="/assets/icons/installation.svg" width="18" height="18" alt="install"/> Installation & Prerequisites
@@ -359,7 +347,7 @@ if max(color_votes) < 0.22:
         return 'grayscale'
 ```
 
-### 🤖 Motion Planning Algorithms
+### <img src="/assets/icons/project.svg" width="18" height="18" alt="motion"/> Motion Planning Algorithms
 
 The system implements two intelligent motion strategies based on pen orientation:
 
@@ -465,7 +453,7 @@ def validate_robot_coords(xyz):
     return (80 <= radial_distance <= 500) and (-100 <= xyz[2] <= 450)
 ```
 
-### 🎨 Visualization & Debugging
+### <img src="/assets/icons/project.svg" width="18" height="18" alt="viz"/> Visualization & Debugging
 
 **Real-time Overlays**:
 - Oriented bounding boxes with confidence scores
@@ -500,9 +488,9 @@ def create_debug_visualization(detection_data):
 
 ---
 
-## 🔬 Research Methodology & Results
+## <img src="/assets/icons/data.svg" width="18" height="18" alt="research"/> Research Methodology & Results
 
-### 📈 Experimental Design
+### <img src="/assets/icons/project.svg" width="18" height="18" alt="experiment"/> Experimental Design
 
 **Controlled Testing Protocol**:
 - 200 total trials (100 STANDARD, 100 COMPLEX)
@@ -535,7 +523,7 @@ def create_debug_visualization(detection_data):
 - 12% insufficient reorientation requiring >2 nudges  
 - 6% mechanical failures (contact loss, object slide)
 
-### 📊 Statistical Analysis
+### <img src="/assets/icons/data.svg" width="18" height="18" alt="stats"/> Statistical Analysis
 
 **Angle Distribution Impact**:
 ```
@@ -554,7 +542,7 @@ Angle Range    | STANDARD Success | COMPLEX Success
 - Red: 90% (45/50 correct)
 - Grayscale: 94% (47/50 correct)
 
-### 🔧 Cost-Benefit Analysis
+### <img src="/assets/icons/data.svg" width="18" height="18" alt="cost"/> Cost-Benefit Analysis
 
 **Hardware Cost Comparison**:
 - **6 DoF Systems** (UR5e): $26,000 - $32,000
@@ -568,16 +556,16 @@ Angle Range    | STANDARD Success | COMPLEX Success
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **MIT License Summary**:
-- ✅ Commercial use allowed
-- ✅ Modification and distribution permitted  
-- ✅ Private use encouraged
-- ❌ No warranty provided
-- ❌ Liability limitations apply
+- Commercial use allowed
+- Modification and distribution permitted
+- Private use encouraged
+- No warranty provided
+- Liability limitations apply
 
 **Additional Considerations**:
 - Model weights may have separate licensing terms
@@ -586,7 +574,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 📚 Citation
+## Citation
 
 If you use this work in your research, please cite:
 
@@ -604,83 +592,23 @@ Rangarajan, A., & Bianchini, B. (2025). Using Visual Intelligence and Motion Pla
   publisher={GitHub},
   howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}},
   note={Research project demonstrating cost-effective robotic manipulation through computer vision}
-}
-```
+<!-- Contributing section removed -->
 
-**IEEE Format**:
-```
-A. Rangarajan and B. Bianchini, "Using Visual Intelligence and Motion Planning to Enable Complex Object Manipulation with a 4 DoF Robotics Arm," GitHub repository, 2025. [Online]. Available: https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting
-```
-
----
-
-## 🙏 Acknowledgments
-
-**Research Support**:
-- **Polygence Research Program** for mentorship and project framework
-- **Bibit Bianchini** for research guidance and methodology development
-
-**Technical Foundations**:
-- **OpenCV Community** for robust computer vision libraries
-- **Ultralytics Team** for YOLOv8 architecture and documentation  
-- **Waveshare** for RoArm-M2-S documentation and support
-- **Zhang et al.** for foundational camera calibration methodology
-- **Garrido-Jurado et al.** for ArUco fiducial marker system
-
-**Dataset & Tools**:
-- **Roboflow** for dataset management and annotation tools
-- **Google Colab** for model training infrastructure
-- **NumPy & Matplotlib** communities for scientific computing foundations
-
-**Inspiration & References**:
-- Academic works on low-DoF manipulation strategies
-- Open-source robotics community for best practices
-- Computer vision research advancing practical applications
-
----
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Here's how you can help:
-
-### 🐛 Bug Reports & Feature Requests
-
-1. **Search existing issues** before creating new ones
-2. **Use issue templates** for bug reports and feature requests
-3. **Provide detailed information**: system specs, error logs, reproduction steps
-4. **Include screenshots/videos** for visual problems
-
-### 💻 Code Contributions
-
-1. **Fork the repository** and create a feature branch:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Follow code style guidelines**:
-   - Use descriptive variable names and comments
-   - Follow PEP 8 for Python code formatting
-   - Add docstrings for new functions and classes
-
-3. **Test your changes**:
-   ```bash
-   python test_pixel_conversion.py
-   python test_coordinates.py
    ```
 
 4. **Submit a pull request** with:
-   - Clear description of changes
-   - Reference to related issues
-   - Test results and validation
+    - Clear description of changes
+    - Reference to related issues
+    - Test results and validation
 
-### 📚 Documentation Improvements
+### Documentation Improvements
 
 - Fix typos, improve clarity, add examples
 - Translate documentation to other languages
 - Create tutorial videos or blog posts
 - Expand calibration guides for different hardware
 
-### 🔬 Research Extensions
+### <img src="/assets/icons/data.svg" width="18" height="18" alt="extensions"/> Research Extensions
 
 **Potential Research Directions**:
 - Multi-object manipulation strategies
@@ -693,7 +621,7 @@ We welcome contributions from the community! Here's how you can help:
 - Calibration data for different camera/robot combinations  
 - Performance benchmarks on various hardware
 
-### 📋 Contribution Guidelines
+### Contribution Guidelines
 
 - **Code Quality**: Write clean, documented, testable code
 - **Commit Messages**: Use clear, descriptive commit messages
@@ -702,9 +630,9 @@ We welcome contributions from the community! Here's how you can help:
 
 ---
 
-## 🧪 Tests
+## <img src="/assets/icons/tests.svg" width="18" height="18" alt="tests"/> Tests
 
-### 🔍 Unit Tests
+### <img src="/assets/icons/tests.svg" width="18" height="18" alt="unit-tests"/> Unit Tests
 
 Run the existing test suite:
 
@@ -734,7 +662,7 @@ python camera_stream.py --mock-robot ResearchDataset
 python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 ```
 
-### 📊 Performance Testing
+### <img src="/assets/icons/data.svg" width="18" height="18" alt="perf-test"/> Performance Testing
 
 **Benchmark Scripts** (coming soon):
 - Detection latency measurement
@@ -748,7 +676,7 @@ python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 - Motion planning: <100ms per decision
 - Memory usage: <500MB total
 
-### 🔧 Testing Your Setup
+### <img src="/assets/icons/tests.svg" width="18" height="18" alt="hw-test"/> Testing Your Setup
 
 **Hardware Validation Checklist**:
 - [ ] Camera produces clear, stable images
