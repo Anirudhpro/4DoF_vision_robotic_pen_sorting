@@ -90,19 +90,14 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 ---
 ## Table of Contents
 
-<!-- removed old emoji TOC entries; icons listed below -->
-<!-- Original emoji TOC removed; icons used below -->
-- ![project](assets/icons/project.svg) Project Description
-- ![data](assets/icons/data.svg) Data and File Overview
-- ![install](assets/icons/installation.svg) Installation & Prerequisites
-- ![calib](assets/icons/calibration.svg) Calibration Workflow
-- ![run](assets/icons/running.svg) Running the System
-- ![usage](assets/icons/project.svg) Usage Instructions & Examples
-- ![research](assets/icons/data.svg) Research Methodology & Results
-- ![license](assets/icons/project.svg) License
-- ![citation](assets/icons/data.svg) Citation
-- ![thanks](assets/icons/project.svg) Acknowledgments
-- ![tests](assets/icons/tests.svg) Tests
+- ![project](assets/icons/project.svg) [Project Description](#project-description)
+- ![install](assets/icons/installation.svg) [Installation & Prerequisites](#system-requirements)
+- ![calib](assets/icons/calibration.svg) [Calibration Workflow](#calibration-workflow)
+- ![run](assets/icons/running.svg) [Running the System](#running-the-system)
+- ![usage](assets/icons/project.svg) [Usage Instructions & Examples](#usage-instructions--examples)
+- ![research](assets/icons/data.svg) [Research Methodology & Results](#research-methodology--results)
+- ![citation](assets/icons/data.svg) [Citation](#citation)
+- ![tests](assets/icons/tests.svg) [Tests](#tests)
 ### System Requirements
 
 - **Python**: 3.10+ (recommended)
@@ -498,31 +493,6 @@ def create_debug_visualization(detection_data):
 - Angle range coverage: 5° - 90° misalignment
 - Standardized lighting and workspace conditions
 
-### ![performance](assets/icons/project.svg) Performance Metrics
-
-#### STANDARD Motion Results (100 trials)
-- **Success Rate**: 92% overall task completion
-- **Localization Accuracy**: 96% correct position detection  
-- **Color Classification**: 94% correct color identification
-- **Pick Success**: 88% successful grasp execution
-- **Placement Accuracy**: 85% correct bin routing
-
-**Failure Analysis**:
-- 4% misclassification due to lighting conditions
-- 6% mechanical failures (gripper alignment, slip)
-- 2% workspace calibration drift
-
-#### COMPLEX Motion Results (100 trials)
-- **Trajectory Accuracy**: 91% successful sweep execution
-- **Reorientation Success**: 86% achieved target alignment
-- **Recovery Rate**: 78% success with ≤2 additional nudges
-- **Overall Success**: 82% complete task execution
-
-**Failure Modes**:
-- 9% trajectory deviations near workspace boundaries
-- 12% insufficient reorientation requiring >2 nudges  
-- 6% mechanical failures (contact loss, object slide)
-
 ### ![stats](assets/icons/data.svg) Statistical Analysis
 
 **Angle Distribution Impact**:
@@ -553,8 +523,6 @@ Angle Range    | STANDARD Success | COMPLEX Success
 - Mechanical complexity reduction vs. software intelligence increase
 - Direct pose control vs. perception-guided manipulation
 - Higher initial capability vs. adaptive problem-solving
-
----
 
 ---
 
