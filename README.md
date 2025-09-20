@@ -28,6 +28,7 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 
 **Key Objectives**:
 - Demonstrate cost-effective automation using 4 DoF systems ($9.5k vs $26k-$32k for 6 DoF)
+ - Demonstrate cost-effective automation using 4 DoF systems
 - Develop robust pixel-to-robot coordinate transformation pipeline
 - Implement intelligent motion planning with STANDARD and COMPLEX branch logic
 - Achieve reliable object manipulation through perception-guided nudging
@@ -91,18 +92,17 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 
 <!-- removed old emoji TOC entries; icons listed below -->
 <!-- Original emoji TOC removed; icons used below -->
-- <img src="/assets/icons/project.svg" width="18" height="18" alt="project"/> Project Description
-- <img src="/assets/icons/data.svg" width="18" height="18" alt="data"/> Data and File Overview
-- <img src="/assets/icons/installation.svg" width="18" height="18" alt="install"/> Installation & Prerequisites
-- <img src="/assets/icons/calibration.svg" width="18" height="18" alt="calib"/> Calibration Workflow
-- <img src="/assets/icons/running.svg" width="18" height="18" alt="run"/> Running the System
-- <img src="/assets/icons/project.svg" width="18" height="18" alt="usage"/> Usage Instructions & Examples
-- <img src="/assets/icons/data.svg" width="18" height="18" alt="research"/> Research Methodology & Results
-- <img src="/assets/icons/project.svg" width="18" height="18" alt="license"/> License
-- <img src="/assets/icons/data.svg" width="18" height="18" alt="citation"/> Citation
-- <img src="/assets/icons/project.svg" width="18" height="18" alt="thanks"/> Acknowledgments
-- <img src="/assets/icons/tests.svg" width="18" height="18" alt="tests"/> Tests
-
+- ![project](assets/icons/project.svg) Project Description
+- ![data](assets/icons/data.svg) Data and File Overview
+- ![install](assets/icons/installation.svg) Installation & Prerequisites
+- ![calib](assets/icons/calibration.svg) Calibration Workflow
+- ![run](assets/icons/running.svg) Running the System
+- ![usage](assets/icons/project.svg) Usage Instructions & Examples
+- ![research](assets/icons/data.svg) Research Methodology & Results
+- ![license](assets/icons/project.svg) License
+- ![citation](assets/icons/data.svg) Citation
+- ![thanks](assets/icons/project.svg) Acknowledgments
+- ![tests](assets/icons/tests.svg) Tests
 ### System Requirements
 
 - **Python**: 3.10+ (recommended)
@@ -313,7 +313,7 @@ python full_run.py
 
 ## Usage Instructions & Examples
 
-### <img src="/assets/icons/project.svg" width="18" height="18" alt="object"/> Object Detection & Classification
+### ![object](assets/icons/project.svg) Object Detection & Classification
 
 The system detects writing utensils using a custom YOLOv8 OBB model with sophisticated classification:
 
@@ -347,7 +347,7 @@ if max(color_votes) < 0.22:
         return 'grayscale'
 ```
 
-### <img src="/assets/icons/project.svg" width="18" height="18" alt="motion"/> Motion Planning Algorithms
+### ![motion](assets/icons/project.svg) Motion Planning Algorithms
 
 The system implements two intelligent motion strategies based on pen orientation:
 
@@ -421,7 +421,7 @@ def compute_complex_motion(center_robot, chosen_tip, pen_radial_angle):
     return waypoints
 ```
 
-### <img src="/assets/icons/data.svg" width="18" height="18" alt="coordinate"/> Coordinate Transformation Mathematics
+### ![coordinate](assets/icons/data.svg) Coordinate Transformation Mathematics
 
 **Complete Transform Chain**:
 
@@ -453,7 +453,7 @@ def validate_robot_coords(xyz):
     return (80 <= radial_distance <= 500) and (-100 <= xyz[2] <= 450)
 ```
 
-### <img src="/assets/icons/project.svg" width="18" height="18" alt="viz"/> Visualization & Debugging
+### ![viz](assets/icons/project.svg) Visualization & Debugging
 
 **Real-time Overlays**:
 - Oriented bounding boxes with confidence scores
@@ -488,9 +488,9 @@ def create_debug_visualization(detection_data):
 
 ---
 
-## <img src="/assets/icons/data.svg" width="18" height="18" alt="research"/> Research Methodology & Results
+## ![research](assets/icons/data.svg) Research Methodology & Results
 
-### <img src="/assets/icons/project.svg" width="18" height="18" alt="experiment"/> Experimental Design
+### ![experiment](assets/icons/project.svg) Experimental Design
 
 **Controlled Testing Protocol**:
 - 200 total trials (100 STANDARD, 100 COMPLEX)
@@ -498,7 +498,7 @@ def create_debug_visualization(detection_data):
 - Angle range coverage: 5° - 90° misalignment
 - Standardized lighting and workspace conditions
 
-### <img src="/assets/icons/project.svg" width="18" height="18" alt="performance"/> Performance Metrics
+### ![performance](assets/icons/project.svg) Performance Metrics
 
 #### STANDARD Motion Results (100 trials)
 - **Success Rate**: 92% overall task completion
@@ -523,7 +523,7 @@ def create_debug_visualization(detection_data):
 - 12% insufficient reorientation requiring >2 nudges  
 - 6% mechanical failures (contact loss, object slide)
 
-### <img src="/assets/icons/data.svg" width="18" height="18" alt="stats"/> Statistical Analysis
+### ![stats](assets/icons/data.svg) Statistical Analysis
 
 **Angle Distribution Impact**:
 ```
@@ -542,7 +542,7 @@ Angle Range    | STANDARD Success | COMPLEX Success
 - Red: 90% (45/50 correct)
 - Grayscale: 94% (47/50 correct)
 
-### <img src="/assets/icons/data.svg" width="18" height="18" alt="cost"/> Cost-Benefit Analysis
+### ![cost](assets/icons/data.svg) Cost-Benefit Analysis
 
 **Hardware Cost Comparison**:
 - **6 DoF Systems** (UR5e): $26,000 - $32,000
@@ -555,22 +555,6 @@ Angle Range    | STANDARD Success | COMPLEX Success
 - Higher initial capability vs. adaptive problem-solving
 
 ---
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**MIT License Summary**:
-- Commercial use allowed
-- Modification and distribution permitted
-- Private use encouraged
-- No warranty provided
-- Liability limitations apply
-
-**Additional Considerations**:
-- Model weights may have separate licensing terms
-- Research dataset usage should credit original sources
-- Hardware documentation follows manufacturer guidelines
 
 ---
 
@@ -592,47 +576,12 @@ Rangarajan, A., & Bianchini, B. (2025). Using Visual Intelligence and Motion Pla
   publisher={GitHub},
   howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}},
   note={Research project demonstrating cost-effective robotic manipulation through computer vision}
-<!-- Contributing section removed -->
+<!-- Contributing and contribution-guideline content removed -->
 
-   ```
 
-4. **Submit a pull request** with:
-    - Clear description of changes
-    - Reference to related issues
-    - Test results and validation
+## ![tests](assets/icons/tests.svg) Tests
 
-### Documentation Improvements
-
-- Fix typos, improve clarity, add examples
-- Translate documentation to other languages
-- Create tutorial videos or blog posts
-- Expand calibration guides for different hardware
-
-### <img src="/assets/icons/data.svg" width="18" height="18" alt="extensions"/> Research Extensions
-
-**Potential Research Directions**:
-- Multi-object manipulation strategies
-- Adaptive learning for object properties
-- Integration with different robot platforms
-- Real-time parameter optimization
-
-**Data Contributions**:
-- Additional training datasets with diverse objects
-- Calibration data for different camera/robot combinations  
-- Performance benchmarks on various hardware
-
-### Contribution Guidelines
-
-- **Code Quality**: Write clean, documented, testable code
-- **Commit Messages**: Use clear, descriptive commit messages
-- **Large Changes**: Discuss major modifications in issues first
-- **Licensing**: Ensure contributions are MIT-compatible
-
----
-
-## <img src="/assets/icons/tests.svg" width="18" height="18" alt="tests"/> Tests
-
-### <img src="/assets/icons/tests.svg" width="18" height="18" alt="unit-tests"/> Unit Tests
+### ![unit-tests](assets/icons/tests.svg) Unit Tests
 
 Run the existing test suite:
 
@@ -644,7 +593,7 @@ python test_pixel_conversion.py
 python test_coordinates.py
 ```
 
-### <img src="/assets/icons/tests.svg" width="18" height="18" alt="integration"/> Integration Tests
+### ![integration](assets/icons/tests.svg) Integration Tests
 
 **Calibration Validation**:
 ```bash
@@ -662,7 +611,7 @@ python camera_stream.py --mock-robot ResearchDataset
 python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 ```
 
-### <img src="/assets/icons/data.svg" width="18" height="18" alt="perf-test"/> Performance Testing
+### ![perf-test](assets/icons/data.svg) Performance Testing
 
 **Benchmark Scripts** (coming soon):
 - Detection latency measurement
@@ -676,7 +625,7 @@ python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 - Motion planning: <100ms per decision
 - Memory usage: <500MB total
 
-### <img src="/assets/icons/tests.svg" width="18" height="18" alt="hw-test"/> Testing Your Setup
+### ![hw-test](assets/icons/tests.svg) Testing Your Setup
 
 **Hardware Validation Checklist**:
 - [ ] Camera produces clear, stable images
