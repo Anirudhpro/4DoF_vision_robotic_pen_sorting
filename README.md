@@ -103,6 +103,17 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 <!-- Contributing section intentionally removed -->
 - [🧪 Tests](#-tests)
 
+- <img src="/assets/icons/project.svg" width="18" height="18" alt="project"/> Project Description
+- <img src="/assets/icons/data.svg" width="18" height="18" alt="data"/> Data and File Overview
+- <img src="/assets/icons/installation.svg" width="18" height="18" alt="install"/> Installation & Prerequisites
+- <img src="/assets/icons/calibration.svg" width="18" height="18" alt="calib"/> Calibration Workflow
+- <img src="/assets/icons/running.svg" width="18" height="18" alt="run"/> Running the System
+- <img src="/assets/icons/project.svg" width="18" height="18" alt="usage"/> Usage Instructions & Examples
+- <img src="/assets/icons/data.svg" width="18" height="18" alt="research"/> Research Methodology & Results
+- <img src="/assets/icons/project.svg" width="18" height="18" alt="license"/> License
+- <img src="/assets/icons/data.svg" width="18" height="18" alt="citation"/> Citation
+- <img src="/assets/icons/project.svg" width="18" height="18" alt="thanks"/> Acknowledgments
+- <img src="/assets/icons/tests.svg" width="18" height="18" alt="tests"/> Tests
 
 ### System Requirements
 
@@ -314,7 +325,7 @@ python full_run.py
 
 ## Usage Instructions & Examples
 
-### 🎯 Object Detection & Classification
+### <img src="/assets/icons/project.svg" width="18" height="18" alt="object"/> Object Detection & Classification
 
 The system detects writing utensils using a custom YOLOv8 OBB model with sophisticated classification:
 
@@ -422,7 +433,7 @@ def compute_complex_motion(center_robot, chosen_tip, pen_radial_angle):
     return waypoints
 ```
 
-### 📊 Coordinate Transformation Mathematics
+### <img src="/assets/icons/data.svg" width="18" height="18" alt="coordinate"/> Coordinate Transformation Mathematics
 
 **Complete Transform Chain**:
 
@@ -499,7 +510,7 @@ def create_debug_visualization(detection_data):
 - Angle range coverage: 5° - 90° misalignment
 - Standardized lighting and workspace conditions
 
-### 🎯 Performance Metrics
+### <img src="/assets/icons/project.svg" width="18" height="18" alt="performance"/> Performance Metrics
 
 #### STANDARD Motion Results (100 trials)
 - **Success Rate**: 92% overall task completion
@@ -705,7 +716,7 @@ python test_pixel_conversion.py
 python test_coordinates.py
 ```
 
-### 🎯 Integration Tests
+### <img src="/assets/icons/tests.svg" width="18" height="18" alt="integration"/> Integration Tests
 
 **Calibration Validation**:
 ```bash
