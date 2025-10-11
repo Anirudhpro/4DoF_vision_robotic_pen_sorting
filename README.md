@@ -22,18 +22,6 @@
 
 This project demonstrates how cost-effective 4 DoF robotic arms can perform manipulation tasks typically requiring expensive 6 DoF systems by leveraging **visual intelligence** and **intelligent motion planning**. The system uses a custom-trained YOLOv8 Oriented Bounding Box (OBB) model to detect writing utensils, converts pixel coordinates into real-world robot coordinates through precise calibration, and executes sophisticated pick-and-place operations.
 
-### Research Questions & Objectives
-
-**Primary Research Question**: How can more affordable 4 DoF robotic arms perform movements and tasks usually meant for higher DoF arms using visual intelligence?
-
-**Key Objectives**:
-- Demonstrate cost-effective automation using 4 DoF systems ($9.5k vs $26k-$32k for 6 DoF)
- - Demonstrate cost-effective automation using 4 DoF systems
-- Develop robust pixel-to-robot coordinate transformation pipeline
-- Implement intelligent motion planning with STANDARD and COMPLEX branch logic
-- Achieve reliable object manipulation through perception-guided nudging
-- Create comprehensive logging and visualization system for research reproducibility
-
 ### Key Features & Technologies
 
 **Computer Vision Pipeline**:
