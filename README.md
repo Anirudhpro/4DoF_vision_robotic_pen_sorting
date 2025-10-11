@@ -112,104 +112,105 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 Install the complete environment:
 
 ```bash
-# Create and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
 
-# Install all dependencies
+<div align="center">
+
+# 4DoF Robotic Pen Sorting — Vision‑Guided
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](#requirements)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](#requirements)
+
+</div>
+
+Short: detects pens with a YOLOv8 OBB model, converts detections to robot coordinates via ArUco calibration, and runs pick/place motions on a 4‑DoF RoArm.
+
+---
+
+## Quick start
+
+1) Install dependencies
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**Key Dependencies**:
-- `opencv-python`: Computer vision and calibration
-- `ultralytics`: YOLOv8 object detection
-- `numpy`: Numerical computations
-- `matplotlib`: Visualization and debugging
-- `serial`: Robot communication
-- `json`: Configuration and data serialization
-
-### Local Configuration
-
-Create `config.json` for your hardware setup:
+2) Create `config.json` (example)
 
 ```json
 {
-  "serial_port": "/dev/tty.usbserial-XXXX",
+    "serial_port": "/dev/tty.usbserial-XXXX",
     "robot_tag_xyz": [300, 0, -57]
 }
 ```
 
-**Configuration Parameters**:
-- `serial_port`: Your robot's serial device path
-- `robot_tag_xyz`: Arm pose relative to the ArUco tag (pre-calibration) coordinates [x, y, z] in mm
+3) Calibrate camera (one-time)
 
----
-
-## Calibration Workflow
-
-### 1. Camera Intrinsics (Checkerboard Method)
-
-**Script**: `camera_calibrate.py`  
-**Method**: Zhang's calibration with checkerboard pattern
-
-**Configuration**:
-```python
-CHECKERBOARD = (9, 6)    # Internal corners (width, height)
-SQUARE_SIZE = 22         # Square size in mm (measured)
-```
-
-**Step-by-Step Process**:
+- Put 100+ checkerboard images in `CalibrationPictures/`
+- Run:
 
 ```bash
-# 1. Capture calibration images
-# Place 100+ checkerboard images in CalibrationPictures/ (we used 100+ images in our experiments)
-# Ensure varied orientations and good corner coverage
-
-# 2. Run calibration
 python camera_calibrate.py
 ```
 
-**Process Details**:
-- Loads images from `CalibrationPictures/` (`.jpg`, `.jpeg`)
-- Detects checkerboard corners with sub-pixel refinement
-- Applies Zhang's method to estimate intrinsic matrix K and distortion coefficients
-- Saves annotated images to `CalibratedLinePictures/`
-- Outputs `calib_data.npz` with calibration parameters
-
-**Quality Indicators**:
-- **Good**: Sharp corners, varied poses, minimal reprojection error
-- **Poor**: Motion blur, limited angles, high distortion
-
-### 2. World Alignment (ArUco Method)
-
-**Script**: `aruco_pose.py`  
-**Method**: ArUco tag pose estimation for extrinsic calibration
-
-**Configuration**:
-```python
-aruco_dict = cv2.aruco.DICT_4X4_50  # Dictionary type
-marker_length = 0.203               # Physical tag size (8 inches)
-```
-
-**Step-by-Step Process**:
+4) Capture ArUco pose (one-time)
 
 ```bash
-# 1. Position ArUco tag in workspace
-# Print tag at exact size (8 inches = 0.203m)
-# Mount rigidly in robot workspace
-
-# 2. Run pose estimation
 python aruco_pose.py
 ```
 
-**Process Details**:
-- Captures live image from webcam
-- Detects ArUco markers using OpenCV
-- Estimates 3D pose (rvec, tvec) relative to camera
-- Saves complete calibration to `Aruco/aruco_reference.json`
-- Creates visualization `aruco_tag_detection.jpg`
+5) Run the system
 
+```bash
+python camera_stream.py <serial_port> [logs_directory]
+# or full pipeline
+python full_run.py
+```
+
+---
+
+## Files you will use
+
+- `camera_stream.py` — real-time detection + optional robot commands
+- `camera_capture.py` — capture images for calibration/dataset
+- `camera_calibrate.py` — intrinsic calibration (checkerboard)
+- `aruco_pose.py` — ArUco extrinsic/world alignment
+- `full_run.py` — run the full pipeline
+- `RoArm/serial_simple_ctrl.py` — serial robot utility
+
+---
+
+## Configuration
+
+- `serial_port`: path to robot serial port
+- `robot_tag_xyz`: arm pose relative to the printed ArUco tag (pre-calibration), in mm
+
+## Tests
+
+- Unit tests:
+
+```bash
+python test_pixel_conversion.py
+python test_coordinates.py
+```
+
+- Integration (no robot):
+
+```bash
+python camera_stream.py --mock-robot ResearchDataset
+```
+
+---
+
+Notes:
+
+- Icons are in `assets/icons/` and referenced relatively so they render on GitHub.
+- This README focuses on practical usage; detailed research notes were moved out of the main README.
+
+---
+
+License: see `LICENSE` file.
 **Output Format** (`aruco_reference.json`):
 ```json
 {
