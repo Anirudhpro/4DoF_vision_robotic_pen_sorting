@@ -369,20 +369,6 @@ python camera_stream.py --mock-robot ResearchDataset
 python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 ```
 
-### ![perf-test](assets/icons/data.svg) Performance Testing
-
-**Benchmark Scripts** (coming soon):
-- Detection latency measurement
-- Coordinate transformation accuracy
-- Motion planning execution time
-- Memory usage profiling
-
-**Expected Performance Targets**:
-- Detection: <50ms per frame
-- Coordinate transform: <5ms per detection  
-- Motion planning: <100ms per decision
-- Memory usage: <500MB total
-
 ### ![hw-test](assets/icons/tests.svg) Testing Your Setup
 
 **Hardware Validation Checklist**:
