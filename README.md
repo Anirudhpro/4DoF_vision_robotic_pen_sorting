@@ -177,171 +177,55 @@ License: see `LICENSE` file.
 **Output Format** (`aruco_reference.json`):
 ```json
 {
-  "camera_matrix": [[fx, 0, cx], [0, fy, cy], [0, 0, 1]],
-  "dist_coeffs": [k1, k2, p1, p2, k3],
-  "rvec": [[rx], [ry], [rz]],
-  "tvec": [[tx], [ty], [tz]]
+## 4DoF Robotic Pen Sorting — Run & Usage
+
+Short: this repository runs a vision pipeline that detects pens and (optionally) commands a 4‑DoF RoArm to pick and place.
+
+Prerequisites
+- Python 3.10+
+- A webcam or USB camera supported by OpenCV
+- (Optional) RoArm serial device for real robot runs
+
+Install
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Configuration
+1. Copy `config.example.json` (or create `config.json`) and set `serial_port` and `robot_tag_xyz`.
+
+Example `config.json`:
+```json
+{
+  "serial_port": "/dev/tty.usbserial-XXXX",
+  "robot_tag_xyz": [300, 0, -57]
 }
 ```
 
-**Troubleshooting**:
-- **No marker detected**: Check lighting, tag size, print quality
-- **Unstable pose**: Ensure rigid mounting, avoid reflections
-- **Poor accuracy**: Verify tag dimensions, improve lighting
+Quick run
+- Calibrate camera (one-time): `python camera_calibrate.py` (put checkerboard images in `CalibrationPictures/`)
+- Capture ArUco pose (one-time): `python aruco_pose.py`
+- Start detection (no robot): `python camera_stream.py --mock-robot ResearchDataset`
+- Start detection + robot: `python camera_stream.py /dev/tty.usbserial-XXX ResearchDataset`
+- Full pipeline: `python full_run.py`
+
+Files you will use
+- `camera_stream.py` — main real-time script
+- `camera_calibrate.py` / `calib_data.npz` — intrinsics
+- `aruco_pose.py` / `Aruco/aruco_reference.json` — extrinsics
+- `camera_capture.py` — helper capture tool
+- `RoArm/serial_simple_ctrl.py` — serial robot utility
+- `full_run.py` — orchestrated pipeline
+
+Tests
+- Unit: `python test_pixel_conversion.py`, `python test_coordinates.py`
+- Integration (no robot): `python camera_stream.py --mock-robot ResearchDataset`
+
+Notes
+- Icons are in `assets/icons/` and referenced relatively so they render on GitHub.
+- License: MIT (see `LICENSE`)
 
 ---
-
-## Running the System
-
-### Quick Start (Direct Execution)
-
-For immediate testing with existing calibration:
-
-```bash
-python camera_stream.py <serial_port> [logs_directory]
-
-# Example:
-python camera_stream.py /dev/tty.usbserial-123 ResearchDataset
-```
-
-**Arguments**:
-- `<serial_port>` (required): Robot serial device path
-- `[logs_directory]` (optional): Session data storage (default: `ResearchDataset`)
-
-### Orchestrated Execution (Full Pipeline)
-
-For complete automated workflow:
-
-```bash
-# Short mode - skip calibration steps
-python full_run.py short
-
-# Full mode - complete pipeline
-python full_run.py
-```
-
-**Full Pipeline Stages**:
-
-1. **Serial Sanity Check** (`RoArm/serial_simple_ctrl.py`)
-   - Tests robot communication
-   - Executes predefined motion sequence
-   - Validates serial interface
-
-2. **Image Capture** (`camera_capture.py`)
    - Interactive capture interface
-   - Saves images to `Aruco/` folder
-   - SPACE to capture, 'q' to quit
-
-3. **ArUco Management**
-   - User selects best calibration image
-   - Renames to `aruco_calibration.jpg`
-   - Cleans up unused images
-
-4. **Pose Estimation** (`aruco_pose.py`)
-   - Processes selected calibration image
-   - Generates `aruco_reference.json`
-   - Creates pose visualization
-
-5. **Live Stream** (`camera_stream.py`)
-   - Launches main detection pipeline
-   - Begins autonomous operation
-
-### User Interface & Controls
-
-**OpenCV Window ("Pen Detection")**:
-- **SPACE**: Trigger motion for current detections
-- **u/U**: Toggle AUTO mode (automatic triggering)
-- **p**: Toggle plot overlay in video window
-- **v**: Toggle separate Matplotlib visualization window
-- **q**: Quit application
-
-**Matplotlib Visualization Window**:
-- Real-time robot coordinate display
-- Motion preview with waypoints
-- Geometric debugging information
-- Same key bindings as OpenCV window
-
-**Visual Feedback**:
-- Blue oriented bounding boxes around detected objects
-- Yellow dots at pen tips
-- Coordinate information overlay
-- Motion branch indicators (STANDARD/COMPLEX)
-- Color classification labels
-
----
-
-## Usage (short)
-
-- Run `camera_stream.py` to start detection and optional robot control.
-- Use `--mock-robot` for local testing without hardware.
-- Use `camera_calibrate.py` and `aruco_pose.py` for calibration setup (one-time).
-
-    plot_pen_geometry(ax, detection_data['center'], detection_data['tips'])
-    
-    # Visualize motion planning
-    if detection_data['motion_type'] == 'STANDARD':
-        plot_offset_candidates(ax, detection_data['offset_candidates'])
-    else:  # COMPLEX
-        plot_sweep_waypoints(ax, detection_data['sweep_path'])
-    
-    # Add coordinate annotations
-    annotate_coordinates(ax, detection_data)
-    
-    return fig
-```
-
----
-## Citation
-
-If you use this work in your research, please cite:
-
-**APA Format**:
-```
-Rangarajan, A., & Bianchini, B. (2025). Using Visual Intelligence and Motion Planning to Enable Complex Object Manipulation with a 4 DoF Robotics Arm. GitHub. https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting
-```
-
-**BibTeX**:
-```bibtex
-@misc{rangarajan2025visual,
-  title={Using Visual Intelligence and Motion Planning to Enable Complex Object Manipulation with a 4 DoF Robotics Arm},
-  author={Rangarajan, Anirudh and Bianchini, Bibit},
-  year={2025},
-  publisher={GitHub},
-  howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}},
-  note={Research project demonstrating cost-effective robotic manipulation through computer vision}
-<!-- Contributing and contribution-guideline content removed -->
-
-
-## ![tests](assets/icons/tests.svg) Tests
-
-### ![unit-tests](assets/icons/tests.svg) Unit Tests
-
-Run the existing test suite:
-
-```bash
-# Coordinate transformation validation
-python test_pixel_conversion.py
-
-# Geometric calculation verification  
-python test_coordinates.py
-```
-
-### ![integration](assets/icons/tests.svg) Integration Tests
-
-**Calibration Validation**:
-```bash
-# Test calibration pipeline
-python camera_calibrate.py  # Verify checkerboard detection
-python aruco_pose.py        # Validate pose estimation
-```
-
-**System Integration**:
-```bash
-# Full system test (without robot)
-python camera_stream.py --mock-robot ResearchDataset
-
-# Robot communication test
-python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
-```
-
-<!-- Hardware/software validation checklists removed from README -->
