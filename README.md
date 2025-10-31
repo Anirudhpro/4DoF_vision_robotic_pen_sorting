@@ -369,22 +369,4 @@ python camera_stream.py --mock-robot ResearchDataset
 python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX
 ```
 
-### ![hw-test](assets/icons/tests.svg) Testing Your Setup
-
-**Hardware Validation Checklist**:
-- [ ] Camera produces clear, stable images
-- [ ] Checkerboard detection finds all corners
-- [ ] ArUco tag detected with stable pose
-- [ ] Robot responds to serial commands
-- [ ] Coordinate transformations within 5mm accuracy
-
-**Software Validation Checklist**:
-- [ ] All dependencies install without errors
-- [ ] YOLO model loads and runs inference
-- [ ] Matplotlib visualization displays correctly
-- [ ] Session logging creates proper directory structure
-- [ ] Configuration file parsed successfully
-
----
-
-<!-- Star section removed -->
+<!-- Hardware/software validation checklists removed from README -->
