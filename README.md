@@ -48,32 +48,7 @@ This project demonstrates how cost-effective 4 DoF robotic arms can perform mani
 - Motion preview with waypoint visualization
 - Comprehensive session logging with MP4 recording and timestamped snapshots
 
-**Why These Technologies?**:
-- **YOLOv8 OBB**: Provides orientation information crucial for grasp planning
-- **OpenCV**: Robust computer vision library with excellent ArUco support
-- **Matplotlib**: Enables precise geometric visualization for debugging
-- **Serial JSON**: Simple, reliable robot communication protocol
-- **Python**: Rapid prototyping with rich scientific computing ecosystem
-
-### Challenges Solved & Future Improvements
-
-**Challenges Addressed**:
-- Mechanical limitations of 4 DoF systems through intelligent software
-- Precise coordinate transformation with consumer-grade hardware
-- Real-time perception and decision making for autonomous operation
-- Robust handling of various pen orientations and colors
-
-**Future Enhancements**:
-- Temporal smoothing of OBB angles over 3-5 frames
-- Self-calibration via robot motion to known tag poses
-- Global shutter camera upgrade for improved accuracy
-- Adaptive sweep parameters based on object properties
-
-<!-- Research documentation reference removed -->
-
----
-
-<!-- Authors and contact information removed -->
+<!-- Removed: 'Why These Technologies?' and 'Challenges Solved & Future Improvements' sections to keep README concise -->
 
 ---
 ## Table of Contents
