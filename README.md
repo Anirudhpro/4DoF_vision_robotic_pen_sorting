@@ -2,7 +2,6 @@
 
 # 4DoF Vision Robotic Pen Sorting
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](#prerequisites)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](#dependencies)
 [![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-orange)](#object-detection)
@@ -16,9 +15,6 @@
 
 </div>
 
----
-
-## Project Description
 
 This project demonstrates how cost-effective 4 DoF robotic arms can perform manipulation tasks typically requiring expensive 6 DoF systems by leveraging **visual intelligence** and **intelligent motion planning**. The system uses a custom-trained YOLOv8 Oriented Bounding Box (OBB) model to detect writing utensils, converts pixel coordinates into real-world robot coordinates through precise calibration, and executes sophisticated pick-and-place operations.
 
@@ -93,64 +89,75 @@ Short: detects pens with a YOLOv8 OBB model, converts detections to robot coordi
 
 1) Install dependencies
 
+# 4DoF Robotic Pen Sorting — Run & Usage
+
+This repository contains the minimal, runnable code to detect pens/markers and (optionally) command a 4‑DoF RoArm for pick-and-place. The README below focuses only on how to run the code and which files you’ll use.
+
+## Prerequisites
+- Python 3.10+
+- A webcam or USB camera supported by OpenCV
+- (Optional) RoArm serial device for real robot runs
+
+## Install
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2) Create `config.json` (example)
+## Configuration
+Copy `config.example.json` to `config.json` and update:
+- `serial_port`: path to the robot serial port (e.g. `/dev/tty.usbserial-XXXX`)
+- `robot_tag_xyz`: arm pose relative to the printed ArUco tag, in mm. Example: `[300, 0, -57]`
 
+Example `config.json`:
 ```json
 {
-    "serial_port": "/dev/tty.usbserial-XXXX",
-    "robot_tag_xyz": [300, 0, -57]
+  "serial_port": "/dev/tty.usbserial-XXXX",
+  "robot_tag_xyz": [300, 0, -57]
 }
 ```
 
-3) Calibrate camera (one-time)
-
-- Put 100+ checkerboard images in `CalibrationPictures/`
-- Run:
+## Quick run
+- Calibrate camera (one-time):
 
 ```bash
 python camera_calibrate.py
 ```
 
-4) Capture ArUco pose (one-time)
+- Capture ArUco pose (one-time):
 
 ```bash
 python aruco_pose.py
 ```
 
-5) Run the system
+- Start detection without a robot (mock):
 
 ```bash
-python camera_stream.py <serial_port> [logs_directory]
-# or full pipeline
+python camera_stream.py --mock-robot ResearchDataset
+```
+
+- Start detection with robot:
+
+```bash
+python camera_stream.py /dev/tty.usbserial-XXX ResearchDataset
+```
+
+- Full pipeline (orchestration):
+
+```bash
 python full_run.py
 ```
 
----
-
 ## Files you will use
-
-- `camera_stream.py` — real-time detection + optional robot commands
+- `camera_stream.py` — main real-time detection script (can send robot commands)
 - `camera_capture.py` — capture images for calibration/dataset
-- `camera_calibrate.py` — intrinsic calibration (checkerboard)
-- `aruco_pose.py` — ArUco extrinsic/world alignment
-- `full_run.py` — run the full pipeline
-- `RoArm/serial_simple_ctrl.py` — serial robot utility
-
----
-
-## Configuration
-
-- `serial_port`: path to robot serial port
-- `robot_tag_xyz`: arm pose relative to the printed ArUco tag (pre-calibration), in mm
+- `camera_calibrate.py` — intrinsic camera calibration; outputs `calib_data.npz`
+- `aruco_pose.py` — ArUco extrinsic/world alignment; outputs `Aruco/aruco_reference.json`
+- `full_run.py` — runs the full pipeline
+- `RoArm/serial_simple_ctrl.py` — serial robot utilities
 
 ## Tests
-
 - Unit tests:
 
 ```bash
@@ -164,68 +171,8 @@ python test_coordinates.py
 python camera_stream.py --mock-robot ResearchDataset
 ```
 
----
+## Notes
+- Put 100+ checkerboard images in `CalibrationPictures/` before running `camera_calibrate.py`.
+- Icons (if present) are stored under `assets/icons/` and referenced relatively so they render on GitHub.
 
-Notes:
-
-- Icons are in `assets/icons/` and referenced relatively so they render on GitHub.
-- This README focuses on practical usage; detailed research notes were moved out of the main README.
-
----
-
-License: see `LICENSE` file.
-**Output Format** (`aruco_reference.json`):
-```json
-{
-## 4DoF Robotic Pen Sorting — Run & Usage
-
-Short: this repository runs a vision pipeline that detects pens and (optionally) commands a 4‑DoF RoArm to pick and place.
-
-Prerequisites
-- Python 3.10+
-- A webcam or USB camera supported by OpenCV
-- (Optional) RoArm serial device for real robot runs
-
-Install
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Configuration
-1. Copy `config.example.json` (or create `config.json`) and set `serial_port` and `robot_tag_xyz`.
-
-Example `config.json`:
-```json
-{
-  "serial_port": "/dev/tty.usbserial-XXXX",
-  "robot_tag_xyz": [300, 0, -57]
-}
-```
-
-Quick run
-- Calibrate camera (one-time): `python camera_calibrate.py` (put checkerboard images in `CalibrationPictures/`)
-- Capture ArUco pose (one-time): `python aruco_pose.py`
-- Start detection (no robot): `python camera_stream.py --mock-robot ResearchDataset`
-- Start detection + robot: `python camera_stream.py /dev/tty.usbserial-XXX ResearchDataset`
-- Full pipeline: `python full_run.py`
-
-Files you will use
-- `camera_stream.py` — main real-time script
-- `camera_calibrate.py` / `calib_data.npz` — intrinsics
-- `aruco_pose.py` / `Aruco/aruco_reference.json` — extrinsics
-- `camera_capture.py` — helper capture tool
-- `RoArm/serial_simple_ctrl.py` — serial robot utility
-- `full_run.py` — orchestrated pipeline
-
-Tests
-- Unit: `python test_pixel_conversion.py`, `python test_coordinates.py`
-- Integration (no robot): `python camera_stream.py --mock-robot ResearchDataset`
-
-Notes
-- Icons are in `assets/icons/` and referenced relatively so they render on GitHub.
-- License: MIT (see `LICENSE`)
-
----
-   - Interactive capture interface
+If you want the removed research content preserved, I can extract it into `RESEARCH.md` — tell me and I’ll create it.
