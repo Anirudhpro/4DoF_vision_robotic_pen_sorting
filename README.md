@@ -1,178 +1,355 @@
 <div align="center">
 
-# 4DoF Vision Robotic Pen Sorting
+# 4DoF Vision-Guided Robotic Pen Sorting
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](#prerequisites)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](#dependencies)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-orange)](#object-detection)
-[![ArUco](https://img.shields.io/badge/ArUco-Calibration-purple)](#calibration)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](https://opencv.org/)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-orange)](https://docs.ultralytics.com/)
 [![Last commit](https://img.shields.io/github/last-commit/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/commits/main)
 [![Issues](https://img.shields.io/github/issues/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
 [![Forks](https://img.shields.io/github/forks/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/network)
 [![Stars](https://img.shields.io/github/stars/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/stargazers)
 
-*Using Visual Intelligence and Motion Planning to Enable Complex Object Manipulation with a 4 DoF Robotics Arm*
+*Demonstrating how cost-effective 4-DoF robotic arms can perform complex manipulation tasks through intelligent vision and motion planning*
+
+[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Documentation](#documentation)
 
 </div>
 
-
-This project demonstrates how cost-effective 4 DoF robotic arms can perform manipulation tasks typically requiring expensive 6 DoF systems by leveraging **visual intelligence** and **intelligent motion planning**. The system uses a custom-trained YOLOv8 Oriented Bounding Box (OBB) model to detect writing utensils, converts pixel coordinates into real-world robot coordinates through precise calibration, and executes sophisticated pick-and-place operations.
-
-### Key Features & Technologies
-
-**Computer Vision Pipeline**:
-- Custom YOLOv8 OBB model trained on 330 annotated writing utensil images
-- Real-time oriented bounding box detection with confidence thresholding (≥0.7)
-- HSV/LAB color classification for sorting (blue, red, green, grayscale)
-- Region-of-Interest filtering to eliminate clutter
-
-**Calibration & Coordinate Transformation**:
-- Checkerboard-based intrinsic calibration (Zhang's method) with 209 board captures
-- ArUco-based extrinsic calibration for world alignment
-- Precise pixel → camera → ArUco plane → robot coordinate transformation
-- Automatic coordinate validation with safety gates
-
-**Intelligent Motion Planning**:
-- **STANDARD Motion**: Perpendicular left-offset grasp for low misalignment angles (<45°)
-- **COMPLEX Motion**: Sweep-based reorientation for high misalignment angles (≥45°)
-- Foam-assisted gripping with reduced closure to prevent object expulsion
-- Color-based routing to designated drop-off zones
-
-**Visualization & Debugging**:
-- Dual UI: OpenCV real-time overlay + interactive Matplotlib workspace visualization
-- Live coordinate display (pixel, camera-relative, robot coordinates)
-- Motion preview with waypoint visualization
-- Comprehensive session logging with MP4 recording and timestamped snapshots
-
-<!-- Removed: 'Why These Technologies?' and 'Challenges Solved & Future Improvements' sections to keep README concise -->
-
 ---
-## Table of Contents
 
-- ![project](assets/icons/project.svg) [Project Description](#project-description)
-- ![install](assets/icons/installation.svg) [Installation & Prerequisites](#system-requirements)
-- ![calib](assets/icons/calibration.svg) [Calibration Workflow](#calibration-workflow)
-- ![run](assets/icons/running.svg) [Running the System](#running-the-system)
-- ![usage](assets/icons/project.svg) [Usage Instructions & Examples](#usage-instructions--examples)
-- ![research](assets/icons/data.svg) [Research Methodology & Results](#research-methodology--results)
-- ![citation](assets/icons/data.svg) [Citation](#citation)
-- ![tests](assets/icons/tests.svg) [Tests](#tests)
-### System Requirements
+## Overview
 
-- **Python**: 3.10+ (recommended)
-- **Operating System**: macOS/Linux (tested on macOS)
-- **Hardware**: 
-  - Camera accessible by OpenCV (USB webcam recommended)
-  - RoArm-M2-S 4 DoF robotic arm with serial interface
-  - Serial device path (e.g., `/dev/tty.usbserial-XXXX` on macOS)
+This project demonstrates autonomous object manipulation using a 4-DoF RoArm-M2-S robotic arm guided by computer vision. The system detects writing utensils (pens, pencils, markers) using a custom-trained YOLOv8 Oriented Bounding Box (OBB) model, transforms pixel coordinates into real-world robot coordinates through precise calibration, and executes intelligent pick-and-place operations based on object orientation and color.
 
-### Dependencies
+### What Makes This Interesting?
 
-Install the complete environment:
+Traditional robotic pick-and-place systems typically require expensive 6-DoF arms with full rotational freedom. This project shows how a budget-friendly 4-DoF arm can accomplish similar tasks by:
 
-```bash
-
-<div align="center">
-
-# 4DoF Robotic Pen Sorting — Vision‑Guided
-
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](#requirements)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](#requirements)
-
-</div>
-
-Short: detects pens with a YOLOv8 OBB model, converts detections to robot coordinates via ArUco calibration, and runs pick/place motions on a 4‑DoF RoArm.
+- **Visual Intelligence**: Using YOLOv8 OBB to detect object position, orientation, and dimensions
+- **Adaptive Motion Planning**: Implementing two distinct grasp strategies based on object alignment
+- **Precise Calibration**: Multi-stage coordinate transformation (Pixel → Camera → ArUco → Robot)
+- **Color-Based Sorting**: HSV/LAB color classification for automated routing
 
 ---
 
-## Quick start
+## Features
 
-1) Install dependencies
+### Computer Vision Pipeline
+- **YOLOv8 OBB Detection**: Custom model trained on 330 annotated images
+- **Oriented Bounding Boxes**: Detects position, rotation, and dimensions of writing utensils
+- **Color Classification**: HSV/LAB analysis to sort objects by color (blue, red, green, grayscale)
+- **Smart Filtering**: Region-of-interest masking and confidence thresholding (≥0.7)
 
-# 4DoF Robotic Pen Sorting — Run & Usage
+### Calibration System
+- **Intrinsic Calibration**: Checkerboard-based camera calibration using Zhang's method
+- **Extrinsic Calibration**: ArUco marker-based world frame alignment
+- **Coordinate Transformation**: Precise pixel-to-robot coordinate mapping with validation
+- **Multi-Stage Pipeline**: Camera frame → ArUco plane → Robot workspace
 
-This repository contains the minimal, runnable code to detect pens/markers and (optionally) command a 4‑DoF RoArm for pick-and-place. The README below focuses only on how to run the code and which files you’ll use.
+### Motion Planning
+- **STANDARD Mode**: Perpendicular offset grasp for well-aligned objects (angle < 45°)
+- **COMPLEX Mode**: Sweep-based reorientation for misaligned objects (angle ≥ 45°)
+- **Safety Validation**: Workspace boundary checking (80-500mm radial, -100 to +450mm Z)
+- **Color Routing**: Automated drop-off at color-coded bins
 
-## Prerequisites
-- Python 3.10+
-- A webcam or USB camera supported by OpenCV
-- (Optional) RoArm serial device for real robot runs
+### Visualization & Logging
+- **Dual UI**: Real-time OpenCV overlay + interactive Matplotlib workspace visualization
+- **Session Recording**: MP4 video logging with timestamped snapshots
+- **Live Debugging**: Coordinate display, motion preview, and status indicators
+- **Interactive Control**: Manual triggering or auto-mode with configurable cooldown
 
-## Install
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+---
 
-## Configuration
-Copy `config.example.json` to `config.json` and update:
-- `serial_port`: path to the robot serial port (e.g. `/dev/tty.usbserial-XXXX`)
-- `robot_tag_xyz`: arm pose relative to the printed ArUco tag, in mm. Example: `[300, 0, -57]`
+## Installation
 
-Example `config.json`:
-```json
-{
-  "serial_port": "/dev/tty.usbserial-XXXX",
-  "robot_tag_xyz": [300, 0, -57]
-}
-```
+### Prerequisites
 
-## Quick run
-- Calibrate camera (one-time):
+- **Python**: 3.10 or higher
+- **Hardware**:
+  - USB webcam or built-in camera
+  - RoArm-M2-S 4-DoF robotic arm
+  - USB-to-serial adapter (e.g., CP2102, CH340)
+  - Printed 8-inch ArUco marker (CV2 4X4_50 dictionary, ID 0)
+  - 9×6 checkerboard calibration pattern (22mm squares)
+- **Operating System**: macOS or Linux (tested on macOS 24.2.0)
 
-```bash
-python camera_calibrate.py
-```
+### Setup
 
-- Capture ArUco pose (one-time):
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting.git
+   cd 4DoF_vision_robotic_pen_sorting
+   ```
 
-```bash
-python aruco_pose.py
-```
+2. **Create virtual environment**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
 
-- Start detection without a robot (mock):
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-python camera_stream.py --mock-robot ResearchDataset
-```
+   You'll also need to install OpenCV, NumPy, Matplotlib, and Ultralytics:
+   ```bash
+   pip install opencv-python numpy matplotlib ultralytics
+   ```
 
-- Start detection with robot:
+4. **Configure the system**
 
-```bash
-python camera_stream.py /dev/tty.usbserial-XXX ResearchDataset
-```
+   Create or update `config.json` in the project root:
+   ```json
+   {
+     "serial_port": "/dev/tty.usbserial-210",
+     "robot_tag_xyz": [300, 0, -57]
+   }
+   ```
 
-- Full pipeline (orchestration):
+   - `serial_port`: Path to your robot's serial device
+     - macOS: `/dev/tty.usbserial-XXXX`
+     - Linux: `/dev/ttyUSB0` or `/dev/ttyACM0`
+     - Windows: `COM3`, `COM4`, etc.
+   - `robot_tag_xyz`: Robot base position relative to ArUco marker center (in mm)
 
+---
+
+## Quick Start
+
+### One-Time Calibration
+
+Before running the system, you need to calibrate your camera and establish the world coordinate frame:
+
+1. **Camera Intrinsic Calibration**
+
+   Capture 100+ images of a checkerboard pattern from different angles:
+   ```bash
+   python camera_capture.py CalibrationPictures
+   ```
+
+   Then run calibration (outputs `calib_data.npz`):
+   ```bash
+   python camera_calibrate.py
+   ```
+
+2. **ArUco Extrinsic Calibration**
+
+   Place the printed 8-inch ArUco marker in the robot's workspace and run:
+   ```bash
+   python aruco_pose.py
+   ```
+
+   This creates `Aruco/aruco_reference.json` with the camera-to-marker transformation.
+
+### Running the System
+
+**Option 1: Full Pipeline (Recommended)**
 ```bash
 python full_run.py
 ```
 
-## Files you will use
-- `camera_stream.py` — main real-time detection script (can send robot commands)
-- `camera_capture.py` — capture images for calibration/dataset
-- `camera_calibrate.py` — intrinsic camera calibration; outputs `calib_data.npz`
-- `aruco_pose.py` — ArUco extrinsic/world alignment; outputs `Aruco/aruco_reference.json`
-- `full_run.py` — runs the full pipeline
-- `RoArm/serial_simple_ctrl.py` — serial robot utilities
+This orchestrates the complete workflow:
+1. Tests serial connection and moves arm to reference position
+2. Captures fresh ArUco images
+3. User selects the best image
+4. Regenerates ArUco calibration
+5. Launches the main detection and control system
 
-## Tests
-- Unit tests:
-
+**Option 2: Detection Only (Skip Calibration)**
 ```bash
-python test_pixel_conversion.py
-python test_coordinates.py
+python full_run.py short
 ```
 
-- Integration (no robot):
+Jumps directly to the camera stream if you've already calibrated.
 
+**Option 3: Manual Control**
+```bash
+python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
+```
+
+Runs the detection system with manual triggering.
+
+**Option 4: Mock Mode (No Robot Required)**
 ```bash
 python camera_stream.py --mock-robot ResearchDataset
 ```
 
-## Notes
-- Put 100+ checkerboard images in `CalibrationPictures/` before running `camera_calibrate.py`.
-- Icons (if present) are stored under `assets/icons/` and referenced relatively so they render on GitHub.
+Test the vision pipeline without hardware.
 
-If you want the removed research content preserved, I can extract it into `RESEARCH.md` — tell me and I’ll create it.
+---
+
+## Usage
+
+### Interactive Controls
+
+When `camera_stream.py` is running:
+
+| Key | Action |
+|-----|--------|
+| `SPACE` | Trigger robot motion on current detections |
+| `u` or `U` | Toggle auto-trigger mode (2-second cooldown) |
+| `p` | Toggle 3D coordinate plot overlay |
+| `v` | Toggle separate Matplotlib visualization window |
+| `q` | Quit the program |
+
+### Understanding the Display
+
+**OpenCV Window**:
+- **Blue boxes**: Detected objects (OBB)
+- **Green circles**: Selected grasp tip
+- **Yellow circles**: Alternate tip
+- **Text overlays**: Pixel coords, camera coords, robot coords, color, angle
+- **Shaded region**: Top 20% (ignored to avoid clutter)
+- **Status badge**: Shows AUTO or SPACE mode
+
+**Matplotlib Window** (if enabled):
+- **Scatter plot**: Pen locations in robot XY workspace
+- **Stars**: Grasp tips (green = selected, yellow = alternate)
+- **Red X**: Recently sent commands (fade after 1s)
+- **Arc**: Pen radial angle visualization
+- **Waypoints**: Motion path preview for COMPLEX mode
+
+### Motion Planning Logic
+
+The system chooses between two grasp strategies based on the **pen radial angle** (angle between the pen's chosen tip and the line from pen center to robot origin):
+
+**STANDARD Mode** (angle < 45°):
+- Perpendicular left-offset approach
+- Sequence: Safe → Approach → Hover (10mm offset) → Descend → Grasp → Retract → Route to color bin → Drop → Home
+
+**COMPLEX Mode** (angle ≥ 45°):
+- Sweep-based reorientation with intermediate waypoints
+- Constructs geometric path to align gripper with pen during approach
+- Longer execution time (~2-3 seconds)
+
+### Color-Based Routing
+
+Detected pens are sorted into bins based on color:
+- **Blue** → Y = +140mm
+- **Red** → Y = +70mm
+- **Green** → Y = -70mm
+- **Grayscale** → Y = -140mm
+
+All drop-offs occur at X = 480mm, Z = 60mm.
+
+---
+
+## Documentation
+
+### Project Structure
+
+```
+.
+├── camera_stream.py           # Main detection & control loop
+├── full_run.py                # Complete pipeline orchestration
+├── camera_capture.py          # Image capture utility
+├── camera_calibrate.py        # Intrinsic calibration
+├── aruco_pose.py              # Extrinsic calibration
+├── RoArm/
+│   ├── serial_simple_ctrl.py  # Serial robot control
+│   └── http_simple_ctrl.py    # HTTP robot control (WiFi)
+├── Misc/
+│   ├── aruco_stream.py        # ArUco detection test
+│   ├── camera_list.py         # List available cameras
+│   └── undistort_stream.py    # Distortion correction test
+├── best.pt                    # Trained YOLOv8 OBB model
+├── calib_data.npz             # Camera calibration data
+├── config.json                # Runtime configuration
+└── requirements.txt           # Python dependencies
+```
+
+### Key Files
+
+- [camera_stream.py](camera_stream.py): Main detection loop with YOLOv8 inference, coordinate transformation, and robot control
+- [full_run.py](full_run.py): Orchestrates the 5-step pipeline from serial test to live control
+- [aruco_pose.py](aruco_pose.py): Computes camera-to-ArUco transformation for world frame alignment
+- [RoArm/serial_simple_ctrl.py](RoArm/serial_simple_ctrl.py): Low-level serial JSON command interface
+- [best.pt](best.pt): Custom YOLOv8 OBB model trained on 330 pen/pencil images
+
+### Calibration Data
+
+- **`calib_data.npz`**: Camera matrix (K), distortion coefficients, and per-image poses
+- **`Aruco/aruco_reference.json`**: ArUco marker pose (rvec, tvec) relative to camera
+
+### Testing
+
+Validate the coordinate transformation pipeline:
+```bash
+python test_pixel_conversion.py  # Test pixel → robot conversion
+python test_coordinates.py       # Test coordinate math
+python check_calibration.py      # Compute reprojection error
+```
+
+Run in mock mode to test without hardware:
+```bash
+python camera_stream.py --mock-robot ResearchDataset
+```
+
+---
+
+## Troubleshooting
+
+**Camera not detected**:
+```bash
+python Misc/camera_list.py  # List available cameras
+```
+
+**Serial port not found**:
+- macOS: Check `ls /dev/tty.usbserial-*`
+- Linux: Check `ls /dev/ttyUSB* /dev/ttyACM*`
+- Windows: Check Device Manager → Ports
+
+**Calibration issues**:
+- Ensure checkerboard is 9×6 with 22mm squares
+- Capture images from diverse angles and distances
+- Run `check_calibration.py` to verify reprojection error (<0.5 pixels is good)
+
+**Robot not responding**:
+- Verify serial port in `config.json`
+- Test with `python RoArm/serial_simple_ctrl.py /dev/tty.usbserial-XXX`
+- Check baud rate is 115200
+
+**YOLOv8 not detecting pens**:
+- Ensure `best.pt` is in the project root
+- Lower confidence threshold in camera_stream.py (line ~125)
+- Check GPU availability with `python Misc/checkGPU.py`
+
+---
+
+## Citation
+
+If you use this project in your research, please cite:
+
+```bibtex
+@misc{4dof_pen_sorting,
+  title={4DoF Vision-Guided Robotic Pen Sorting},
+  author={Anirudh Prabhakaran},
+  year={2024},
+  howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}}
+}
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## Acknowledgments
+
+- **YOLOv8**: [Ultralytics](https://docs.ultralytics.com/)
+- **OpenCV**: [OpenCV.org](https://opencv.org/)
+- **RoArm-M2-S**: [Waveshare](https://www.waveshare.com/)
+- **ArUco Markers**: OpenCV contrib module
+
+---
+
+<div align="center">
+
+**Questions?** Open an [issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
+
+</div>
