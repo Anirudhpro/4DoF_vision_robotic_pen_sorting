@@ -157,8 +157,6 @@ python full_run.py
 ├── camera_calibrate.py        # Intrinsic camera calibration
 ├── aruco_pose.py              # Extrinsic ArUco calibration
 ├── camera_capture.py          # Image capture utility
-├── test_pixel_conversion.py   # Unit tests for coordinate transform
-├── test_coordinates.py        # Integration tests for calibration
 ├── RoArm/
 │   └── serial_simple_ctrl.py  # Serial robot control (from WaveShare)
 ├── Misc/                      # Utility scripts
@@ -175,16 +173,6 @@ python full_run.py
 │   └── aruco_reference.json   # ArUco calibration data (generated)
 └── ResearchDataset/           # Session logs (auto-created)
     └── log_*/                 # Per-session data and videos
-```
-
----
-
-## Testing
-
-Run unit tests:
-```bash
-python test_pixel_conversion.py
-python test_coordinates.py
 ```
 
 ---
