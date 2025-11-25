@@ -171,19 +171,6 @@ python Misc/camera_list.py
 
 ---
 
-## Citation
-
-```bibtex
-@misc{4dof_pen_sorting,
-  title={4DoF Vision-Guided Robotic Pen Sorting},
-  author={Prabhakaran, Anirudh},
-  year={2024},
-  howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}}
-}
-```
-
----
-
 ## License
 
 MIT License - see [LICENSE](LICENSE)
