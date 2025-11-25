@@ -204,12 +204,11 @@ python Misc/camera_list.py
 - Verify ArUco image exists as `Aruco/aruco_calibration.jpg`
 - Run `check_calibration.py` to verify reprojection error < 0.5px
 
-**Missing best.pt:**
-- Model file must be in project root directory
-- Approximately 6.3 MB
-- Contact repository owner or train your own
+**YOLOv8 model (best.pt):**
+- Required in project root directory
+- Train your own model or obtain separately
 
-**Missing RoArm control code:**
+**RoArm control code:**
 - Download from [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
 - Place in `RoArm/` directory
 - Required: `serial_simple_ctrl.py`
