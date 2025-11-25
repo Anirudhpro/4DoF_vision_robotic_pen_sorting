@@ -60,19 +60,19 @@ cat > config.json << EOF
 EOF
 ```
 
-### Important: Model File
+### Required: YOLOv8 Model
 
-The YOLOv8 model file `best.pt` (6.3 MB) is **gitignored** and not included in the repository. You need to either:
+The trained YOLOv8 OBB model (`best.pt`, 6.3 MB) is not included in this repository. You need to either:
 - Train your own model on pen/marker images using YOLOv8 OBB
 - Contact the repository owner for the trained model file
-- Place your `best.pt` in the project root directory
+- Place the model file as `best.pt` in the project root directory
 
-### Important: RoArm Control Code
+### Required: RoArm Control Library
 
-The `RoArm/` folder containing robot control code is **gitignored** and not included in the repository. RoArm-M2-S provides official control libraries and examples in their documentation:
+RoArm-M2-S control code is not included in this repository. Obtain the official control libraries from WaveShare:
 - [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
-- Download their official Python SDK and place control scripts in the `RoArm/` directory
-- Required files: `serial_simple_ctrl.py` for serial JSON commands to the robot
+- Download the official Python SDK and place control scripts in a `RoArm/` directory
+- Required: `serial_simple_ctrl.py` for serial JSON communication with the robot
 
 ---
 
