@@ -60,6 +60,13 @@ cat > config.json << EOF
 EOF
 ```
 
+### Important: Model File
+
+The YOLOv8 model file `best.pt` (6.3 MB) is **gitignored** and not included in the repository. You need to either:
+- Train your own model on pen/marker images using YOLOv8 OBB
+- Contact the repository owner for the trained model file
+- Place your `best.pt` in the project root directory
+
 ---
 
 ## Quick Start
@@ -68,6 +75,7 @@ EOF
 
 Capture 100+ checkerboard images:
 ```bash
+mkdir -p CalibrationPictures
 python camera_capture.py CalibrationPictures
 # Press SPACE to capture, q to quit
 ```
@@ -79,15 +87,24 @@ python camera_calibrate.py
 
 ### 2. ArUco Calibration
 
-Capture ArUco marker image and generate calibration (outputs `Aruco/aruco_reference.json`):
+Create directory and capture marker image:
 ```bash
+mkdir -p Aruco
 python camera_capture.py Aruco
+# Press SPACE to capture, q to quit
+```
+
+Rename your best capture to `aruco_calibration.jpg`, then generate calibration:
+```bash
+mv Aruco/1.jpg Aruco/aruco_calibration.jpg  # or whichever image you want
 python aruco_pose.py
 ```
 
+**Note:** `aruco_pose.py` expects `Aruco/aruco_calibration.jpg` to exist. The `full_run.py` script automates this selection.
+
 ### 3. Run System
 
-**Full pipeline:**
+**Full pipeline (recommended):**
 ```bash
 python full_run.py
 ```
@@ -134,12 +151,27 @@ python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
 ├── camera_calibrate.py        # Intrinsic calibration
 ├── aruco_pose.py              # Extrinsic calibration
 ├── camera_capture.py          # Image capture utility
-├── RoArm/serial_simple_ctrl.py  # Serial robot control
-├── best.pt                    # YOLOv8 OBB model
-├── calib_data.npz             # Camera calibration (generated)
-├── config.json                # Configuration (you create)
-└── Aruco/aruco_reference.json # ArUco calibration (generated)
+├── check_calibration.py       # Verify calibration quality
+├── RoArm/
+│   ├── serial_simple_ctrl.py  # Serial robot control
+│   └── http_simple_ctrl.py    # HTTP robot control (alternative)
+├── Misc/                      # Utility scripts
+│   ├── camera_list.py         # List available cameras
+│   ├── aruco_stream.py        # Test ArUco detection
+│   └── undistort_stream.py    # Test distortion correction
+├── best.pt                    # YOLOv8 OBB model (NOT in repo - see Installation)
+├── calib_data.npz             # Camera calibration (generated, gitignored)
+├── config.json                # Configuration (you create, gitignored)
+├── CalibrationPictures/       # Checkerboard images (you create)
+├── CalibratedLinePictures/    # Annotated calibration (generated)
+├── Aruco/
+│   ├── aruco_calibration.jpg  # ArUco marker image (you provide)
+│   └── aruco_reference.json   # ArUco calibration (generated, gitignored)
+└── ResearchDataset/           # Session logs (generated, gitignored)
+    └── log N/                 # Per-session recordings
 ```
+
+**Gitignored files:** `*.npz`, `*.pt`, `*.jpg`, `*.png`, `*.mp4`, `config.json`, log folders
 
 ---
 
@@ -161,8 +193,13 @@ python Misc/camera_list.py
 
 **Calibration fails:**
 - Ensure 100+ checkerboard images in `CalibrationPictures/`
-- Verify ArUco image in `Aruco/aruco_calibration.jpg`
+- Verify ArUco image exists as `Aruco/aruco_calibration.jpg`
 - Run `check_calibration.py` to verify error < 0.5px
+
+**Missing best.pt:**
+- Model file is gitignored (6.3 MB)
+- Train your own or request from repository owner
+- Must be placed in project root
 
 ---
 
