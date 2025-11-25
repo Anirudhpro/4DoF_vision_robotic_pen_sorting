@@ -67,6 +67,13 @@ The YOLOv8 model file `best.pt` (6.3 MB) is **gitignored** and not included in t
 - Contact the repository owner for the trained model file
 - Place your `best.pt` in the project root directory
 
+### Important: RoArm Control Code
+
+The `RoArm/` folder containing robot control code is **gitignored** and not included in the repository. RoArm-M2-S provides official control libraries and examples in their documentation:
+- [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
+- Download their official Python SDK and place control scripts in the `RoArm/` directory
+- Required files: `serial_simple_ctrl.py` for serial JSON commands to the robot
+
 ---
 
 ## Quick Start

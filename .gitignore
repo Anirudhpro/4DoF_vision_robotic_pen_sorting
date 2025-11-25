@@ -41,6 +41,7 @@ venv/
 # User-specified ignores
 ExtIntVals/
 RobotDocs/
+RoArm/
 aruco_tag_detection.jpg
 yolo_init_model.py
 test_pixel_conversion.py
