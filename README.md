@@ -2,43 +2,12 @@
 
 # 4DoF Vision-Guided Robotic Pen Sorting
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-red)](https://opencv.org/)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-orange)](https://docs.ultralytics.com/)
-[![Last commit](https://img.shields.io/github/last-commit/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/commits/main)
-[![Issues](https://img.shields.io/github/issues/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
-[![Forks](https://img.shields.io/github/forks/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/network)
-[![Stars](https://img.shields.io/github/stars/Anirudhpro/4DoF_vision_robotic_pen_sorting)](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/stargazers)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-00FFFF?style=for-the-badge&logo=yolo&logoColor=black)](https://docs.ultralytics.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-*Demonstrating how cost-effective 4-DoF robotic arms can perform complex manipulation tasks through intelligent vision and motion planning*
-
-[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Documentation](#documentation) • [Contributing](#contributing) • [Support](#support)
-
----
-
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-  - [Expected Directory Structure](#expected-directory-structure)
-  - [One-Time Calibration](#one-time-calibration)
-  - [Running the System](#running-the-system)
-- [Usage](#usage)
-  - [Interactive Controls](#interactive-controls)
-  - [Understanding the Display](#understanding-the-display)
-  - [Motion Planning Logic](#motion-planning-logic)
-  - [Color-Based Routing](#color-based-routing)
-- [Documentation](#documentation)
-  - [Project Structure](#project-structure)
-  - [Key Files](#key-files)
-  - [Calibration Data](#calibration-data)
-  - [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [Citation](#citation)
-- [License](#license)
-- [Support](#support)
+**Autonomous robotic manipulation using 4-DoF arms through intelligent vision and motion planning**
 
 </div>
 
