@@ -48,9 +48,6 @@ Vision system for autonomous object manipulation with a 4-DoF RoArm-M2-S. Detect
 git clone https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting.git
 cd 4DoF_vision_robotic_pen_sorting
 
-# Create required directories
-mkdir -p Aruco CalibrationPictures RoArm
-
 # Install dependencies
 pip install opencv-python numpy matplotlib ultralytics pyserial
 
@@ -79,9 +76,9 @@ RoArm-M2-S control code is not included. Download from [WaveShare RoArm-M2-S Wik
 
 Capture 100+ checkerboard images:
 ```bash
-mkdir -p CalibrationPictures
-python camera_capture.py CalibrationPictures
-# Press SPACE to capture, q to quit
+python camera_capture.py
+# Press SPACE to capture, ESC to quit
+# Images saved to CalibrationPictures/ (created automatically)
 ```
 
 Run calibration (outputs `calib_data.npz`):
@@ -91,56 +88,61 @@ python camera_calibrate.py
 
 ### 2. ArUco Calibration
 
-Create directory and capture marker image:
+Capture ArUco marker image:
 ```bash
-mkdir -p Aruco
-python camera_capture.py Aruco
-# Press SPACE to capture, q to quit
+python camera_capture.py
+# Press SPACE to capture marker image, ESC to quit
 ```
 
-Rename your best capture to `aruco_calibration.jpg`, then generate calibration:
+Move your best capture to Aruco directory and rename:
 ```bash
-mv Aruco/1.jpg Aruco/aruco_calibration.jpg  # or whichever image you want
+mkdir -p Aruco
+mv CalibrationPictures/1.jpg Aruco/aruco_calibration.jpg
 python aruco_pose.py
 ```
 
-**Note:** `aruco_pose.py` expects `Aruco/aruco_calibration.jpg` to exist. The `full_run.py` script automates this selection.
+**Note:** `aruco_pose.py` expects `Aruco/aruco_calibration.jpg` to exist.
 
 ### 3. Run System
 
-**Full pipeline (recommended):**
+**Mock robot (testing without hardware):**
 ```bash
-python full_run.py
+python camera_stream.py --mock-robot
 ```
 
-**Direct detection:**
+**With real robot:**
 ```bash
-python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
+python camera_stream.py
+```
+
+**Full pipeline with calibration:**
+```bash
+python full_run.py
 ```
 
 ---
 
 ## Usage
 
-### Controls
+### Controls (camera_stream.py)
 
 | Key | Action |
 |-----|--------|
-| `SPACE` | Trigger robot motion |
+| `SPACE` | Trigger robot motion for detected object |
 | `u` | Toggle auto-trigger mode |
 | `p` | Toggle 3D plot overlay |
-| `v` | Toggle Matplotlib window |
-| `q` | Quit |
+| `v` | Toggle Matplotlib workspace window |
+| `ESC` | Quit |
 
 ### Motion Planning
 
-- **STANDARD** (angle < 45°): Perpendicular offset grasp → Color bin
-- **COMPLEX** (angle ≥ 45°): Sweep reorientation → Color bin
+- **STANDARD** (angle < 45°): Direct perpendicular grasp → Color bin
+- **COMPLEX** (angle ≥ 45°): Sweep to reorient → Color bin
 
 ### Color Routing
 
 - Blue → Y=+140mm
-- Red → Y=+70mm
+- Red → Y=+70mm  
 - Green → Y=-70mm
 - Grayscale → Y=-140mm
 
@@ -150,59 +152,66 @@ python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
 
 ```
 .
-├── camera_stream.py           # Main detection & control loop
-├── full_run.py                # Complete pipeline orchestration
-├── camera_calibrate.py        # Intrinsic calibration
-├── aruco_pose.py              # Extrinsic calibration
+├── camera_stream.py           # Main detection & robot control
+├── full_run.py                # Complete pipeline with calibration
+├── camera_calibrate.py        # Intrinsic camera calibration
+├── aruco_pose.py              # Extrinsic ArUco calibration
 ├── camera_capture.py          # Image capture utility
-├── check_calibration.py       # Verify calibration quality
+├── test_pixel_conversion.py   # Unit tests for coordinate transform
+├── test_coordinates.py        # Integration tests for calibration
 ├── RoArm/
-│   ├── serial_simple_ctrl.py  # Serial robot control
-│   └── http_simple_ctrl.py    # HTTP robot control (alternative)
+│   └── serial_simple_ctrl.py  # Serial robot control (from WaveShare)
 ├── Misc/                      # Utility scripts
 │   ├── camera_list.py         # List available cameras
-│   ├── aruco_stream.py        # Test ArUco detection
-│   └── undistort_stream.py    # Test distortion correction
-├── best.pt                    # YOLOv8 OBB model (NOT in repo - see Installation)
-├── calib_data.npz             # Camera calibration (generated, gitignored)
-├── config.json                # Configuration (you create, gitignored)
-├── CalibrationPictures/       # Checkerboard images (you create)
+│   ├── aruco_stream.py        # Test ArUco detection live
+│   └── undistort_stream.py    # Test camera distortion correction
+├── best.pt                    # YOLOv8 OBB model (NOT in repo)
+├── calib_data.npz             # Camera calibration data (generated)
+├── config.json                # Robot configuration (you create)
+├── CalibrationPictures/       # Checkerboard images (auto-created)
 ├── CalibratedLinePictures/    # Annotated calibration (generated)
 ├── Aruco/
 │   ├── aruco_calibration.jpg  # ArUco marker image (you provide)
-│   └── aruco_reference.json   # ArUco calibration (generated, gitignored)
-└── ResearchDataset/           # Session logs (generated, gitignored)
-    └── log N/                 # Per-session recordings
+│   └── aruco_reference.json   # ArUco calibration data (generated)
+└── ResearchDataset/           # Session logs (auto-created)
+    └── log_*/                 # Per-session data and videos
 ```
 
-**Gitignored files:** `*.npz`, `*.pt`, `*.jpg`, `*.png`, `*.mp4`, `config.json`, log folders
+---
+
+## Testing
+
+Run unit tests:
+```bash
+python test_pixel_conversion.py
+python test_coordinates.py
+```
 
 ---
 
 ## Troubleshooting
 
-**Camera issues:**
+**List available cameras:**
 ```bash
-python Misc/camera_list.py  # List available cameras
+python Misc/camera_list.py
 ```
 
-**Serial port not found:**
+**Find serial port:**
 - macOS: `ls /dev/tty.usbserial-*`
 - Linux: `ls /dev/ttyUSB* /dev/ttyACM*`
 
-**Calibration error:**
-- Run `check_calibration.py` to verify reprojection error < 0.5px
+**Test ArUco detection:**
+```bash
+python Misc/aruco_stream.py
+```
+
+**Test camera undistortion:**
+```bash
+python Misc/undistort_stream.py
+```
 
 ---
 
 ## License
 
 MIT License - see [LICENSE](LICENSE)
-
----
-
-<div align="center">
-
-**Questions?** [Open an issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
-
-</div>
