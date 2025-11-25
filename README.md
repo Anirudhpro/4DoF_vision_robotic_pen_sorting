@@ -97,11 +97,6 @@ python full_run.py
 python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
 ```
 
-**Mock mode (no robot):**
-```bash
-python camera_stream.py --mock-robot ResearchDataset
-```
-
 ---
 
 ## Usage
