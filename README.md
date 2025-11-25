@@ -12,7 +12,33 @@
 
 *Demonstrating how cost-effective 4-DoF robotic arms can perform complex manipulation tasks through intelligent vision and motion planning*
 
-[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Documentation](#documentation)
+[Overview](#overview) • [Features](#features) • [Installation](#installation) • [Quick Start](#quick-start) • [Usage](#usage) • [Documentation](#documentation) • [Contributing](#contributing) • [Support](#support)
+
+---
+
+## Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Expected Directory Structure](#expected-directory-structure)
+  - [One-Time Calibration](#one-time-calibration)
+  - [Running the System](#running-the-system)
+- [Usage](#usage)
+  - [Interactive Controls](#interactive-controls)
+  - [Understanding the Display](#understanding-the-display)
+  - [Motion Planning Logic](#motion-planning-logic)
+  - [Color-Based Routing](#color-based-routing)
+- [Documentation](#documentation)
+  - [Project Structure](#project-structure)
+  - [Key Files](#key-files)
+  - [Calibration Data](#calibration-data)
+  - [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Citation](#citation)
+- [License](#license)
+- [Support](#support)
 
 </div>
 
@@ -20,11 +46,19 @@
 
 ## Overview
 
-This project demonstrates autonomous object manipulation using a 4-DoF RoArm-M2-S robotic arm guided by computer vision. The system detects writing utensils (pens, pencils, markers) using a custom-trained YOLOv8 Oriented Bounding Box (OBB) model, transforms pixel coordinates into real-world robot coordinates through precise calibration, and executes intelligent pick-and-place operations based on object orientation and color.
+### What This Project Does
 
-### What Makes This Interesting?
+This project demonstrates **autonomous object manipulation** using a 4-DoF RoArm-M2-S robotic arm guided by computer vision. The system:
 
-Traditional robotic pick-and-place systems typically require expensive 6-DoF arms with full rotational freedom. This project shows how a budget-friendly 4-DoF arm can accomplish similar tasks by:
+1. **Detects** writing utensils (pens, pencils, markers) using a custom YOLOv8 OBB model
+2. **Analyzes** object position, orientation, and color
+3. **Plans** adaptive grasp strategies based on object alignment
+4. **Executes** precise pick-and-place operations
+5. **Sorts** objects into color-coded bins
+
+### Why This Project Is Useful
+
+Traditional robotic pick-and-place systems typically require expensive 6-DoF arms with full rotational freedom. This project shows how a **budget-friendly 4-DoF arm** can accomplish similar tasks by:
 
 - **Visual Intelligence**: Using YOLOv8 OBB to detect object position, orientation, and dimensions
 - **Adaptive Motion Planning**: Implementing two distinct grasp strategies based on object alignment
@@ -393,38 +427,121 @@ python Misc/camera_list.py  # List available cameras
 
 ---
 
+## Contributing
+
+Contributions are welcome! This project benefits from:
+- Bug reports and feature requests
+- Code improvements and new features
+- Documentation enhancements
+- Hardware compatibility testing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
+- How to report bugs
+- How to suggest enhancements
+- Pull request process
+- Code style guidelines
+- Areas where contributions are particularly valuable
+
+Quick contribution checklist:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
 ## Citation
 
-If you use this project in your research, please cite:
+If you use this project in your research, please cite it using the following formats:
 
+### BibTeX
 ```bibtex
 @misc{4dof_pen_sorting,
   title={4DoF Vision-Guided Robotic Pen Sorting},
-  author={Anirudh Prabhakaran},
+  author={Prabhakaran, Anirudh},
   year={2024},
-  howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}}
+  howpublished={\url{https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting}},
+  note={A vision-guided robotic system demonstrating autonomous manipulation with 4-DoF arms}
 }
 ```
+
+### APA
+Prabhakaran, A. (2024). *4DoF Vision-Guided Robotic Pen Sorting* [Computer software]. https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting
+
+GitHub will also generate citations automatically from the [CITATION.cff](CITATION.cff) file. Click "Cite this repository" in the About section on GitHub.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**What this means:**
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ⚠️ Warranty and liability limitations apply
 
 ---
 
-## Acknowledgments
+## Support
 
-- **YOLOv8**: [Ultralytics](https://docs.ultralytics.com/)
-- **OpenCV**: [OpenCV.org](https://opencv.org/)
-- **RoArm-M2-S**: [Waveshare](https://www.waveshare.com/)
-- **ArUco Markers**: OpenCV contrib module
+### Getting Help
+
+If you need help with this project:
+
+1. **Check the documentation**
+   - Read through this README thoroughly
+   - Review [Troubleshooting](#troubleshooting) section
+   - Check [CONTRIBUTING.md](CONTRIBUTING.md) for development questions
+
+2. **Search existing issues**
+   - [Browse open issues](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
+   - [Check closed issues](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues?q=is%3Aissue+is%3Aclosed) for solutions
+
+3. **Open a new issue**
+   - Use a clear, descriptive title
+   - Include your environment (OS, Python version, hardware)
+   - Provide steps to reproduce the problem
+   - Include relevant logs, error messages, or screenshots
+
+### Maintainers
+
+This project is maintained by:
+- **Anirudh Prabhakaran** ([@Anirudhpro](https://github.com/Anirudhpro))
+
+### Acknowledgments
+
+This project builds upon excellent open-source tools:
+- **YOLOv8**: [Ultralytics](https://docs.ultralytics.com/) - Object detection framework
+- **OpenCV**: [OpenCV.org](https://opencv.org/) - Computer vision library
+- **RoArm-M2-S**: [Waveshare](https://www.waveshare.com/) - 4-DoF robotic arm
+- **ArUco Markers**: OpenCV contrib module - Fiducial marker system
+
+### Project Status
+
+**Active Development** - This project is actively maintained and accepting contributions.
+
+- 🐛 Bug fixes: Ongoing
+- ✨ Feature additions: Welcome
+- 📖 Documentation: Continuously improving
+- 🧪 Testing: Expanding coverage
+
+### Related Projects
+
+If you're interested in this project, you might also like:
+- [ROS (Robot Operating System)](https://www.ros.org/) - Comprehensive robotics framework
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) - State-of-the-art object detection
+- [OpenCV Tutorials](https://docs.opencv.org/4.x/d9/df8/tutorial_root.html) - Learn computer vision
 
 ---
 
 <div align="center">
 
-**Questions?** Open an [issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
+**Questions?** Open an [issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues) • **Want to contribute?** Read [CONTRIBUTING.md](CONTRIBUTING.md)
+
+Made with ❤️ for the robotics and computer vision community
 
 </div>

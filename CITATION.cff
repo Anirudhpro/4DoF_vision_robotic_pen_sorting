@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Prabhakaran
+    given-names: Anirudh
+    orcid: https://orcid.org/0000-0000-0000-0000
+title: "4DoF Vision-Guided Robotic Pen Sorting"
+version: 1.0.0
+date-released: 2024-08-12
+url: "https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting"
+repository-code: "https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting"
+keywords:
+  - robotics
+  - computer-vision
+  - yolov8
+  - object-detection
+  - motion-planning
+  - aruco-markers
+  - camera-calibration
+  - pick-and-place
+  - 4dof-robot
+license: MIT
+abstract: "A vision-guided robotic system demonstrating how cost-effective 4-DoF robotic arms can perform complex manipulation tasks through intelligent vision and motion planning. The system uses YOLOv8 Oriented Bounding Box detection, precise camera calibration, and adaptive grasp strategies to autonomously sort writing utensils by color."
