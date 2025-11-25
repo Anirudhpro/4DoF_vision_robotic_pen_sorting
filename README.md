@@ -2,12 +2,55 @@
 
 # 4DoF Vision-Guided Robotic Pen Sorting
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-OBB-00FFFF?style=for-the-badge&logo=yolo&logoColor=black)](https://docs.ultralytics.com/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+<img src="https://img.shields.io/badge/Python-3.10+-1e293b?style=flat-square&logo=python&logoColor=white&labelColor=1e293b" alt="Python"/>
+<img src="https://img.shields.io/badge/OpenCV-4.x-1e293b?style=flat-square&logo=opencv&logoColor=white&labelColor=1e293b" alt="OpenCV"/>
+<img src="https://img.shields.io/badge/YOLOv8-OBB-1e293b?style=flat-square&logo=yolo&logoColor=white&labelColor=1e293b" alt="YOLOv8"/>
+<img src="https://img.shields.io/badge/License-MIT-1e293b?style=flat-square&labelColor=1e293b" alt="MIT"/>
 
-**Autonomous robotic manipulation using 4-DoF arms through intelligent vision and motion planning**
+### Autonomous robotic manipulation using 4-DoF arms through intelligent vision and motion planning
+
+<br/>
+
+<table>
+<tr>
+<td align="center" width="33%">
+
+<div style="background: linear-gradient(145deg, #1e293b 0%, #475569 50%, #1e293b 100%); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/cpu.svg" width="40" height="40" style="filter: brightness(0) invert(1);"/>
+</div>
+
+**Computer Vision**
+YOLOv8 OBB Detection
+HSV/LAB Color Analysis
+Real-time Processing
+
+</td>
+<td align="center" width="33%">
+
+<div style="background: linear-gradient(145deg, #1e293b 0%, #475569 50%, #1e293b 100%); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/target.svg" width="40" height="40" style="filter: brightness(0) invert(1);"/>
+</div>
+
+**Calibration System**
+Checkerboard Intrinsic
+ArUco Extrinsic
+Coordinate Transformation
+
+</td>
+<td align="center" width="33%">
+
+<div style="background: linear-gradient(145deg, #1e293b 0%, #475569 50%, #1e293b 100%); border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/move.svg" width="40" height="40" style="filter: brightness(0) invert(1);"/>
+</div>
+
+**Motion Planning**
+Adaptive Grasp Strategies
+Sweep Reorientation
+Color-Based Routing
+
+</td>
+</tr>
+</table>
 
 </div>
 
