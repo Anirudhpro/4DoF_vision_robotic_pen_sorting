@@ -186,27 +186,56 @@ python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
 
 **Missing directories:**
 ```bash
-mkdir -p Aruco CalibrationPictures
+mkdir -p Aruco CalibrationPictures RoArm
 ```
+The system expects these directories to exist before running calibration or detection scripts.
 
 **Camera not found:**
 ```bash
 python Misc/camera_list.py
 ```
+This lists all available cameras on your system. If your camera isn't detected:
+- Check USB connection and permissions
+- Try a different camera index in the code
+- Ensure no other application is using the camera
 
-**Serial port:**
+**Serial port not found:**
 - macOS: `ls /dev/tty.usbserial-*`
 - Linux: `ls /dev/ttyUSB* /dev/ttyACM*`
+- Windows: Check Device Manager → Ports (COM & LPT)
+
+If the robot isn't detected:
+- Install USB-to-serial drivers (CP2102, CH340, or FTDI)
+- Check the physical connection to the robot
+- Verify power is connected to the RoArm-M2-S
+- Update `serial_port` in `config.json` with the correct device path
 
 **Calibration fails:**
-- Ensure 100+ checkerboard images in `CalibrationPictures/`
+- Ensure 100+ checkerboard images in `CalibrationPictures/` (more is better)
+- Images should show the checkerboard from various angles and distances
 - Verify ArUco image exists as `Aruco/aruco_calibration.jpg`
-- Run `check_calibration.py` to verify error < 0.5px
+- The marker must be clearly visible and not blurred
+- Run `check_calibration.py` to verify reprojection error < 0.5 pixels
+- If error is high, recapture calibration images with better lighting
 
 **Missing best.pt:**
-- Model file is gitignored (6.3 MB)
-- Train your own or request from repository owner
-- Must be placed in project root
+- The YOLOv8 model file must be in the project root directory
+- File size should be approximately 6.3 MB
+- Train your own model using the provided dataset structure in `Pens.v2i.yolov8-obb/`
+- Or contact the repository owner for the pre-trained model
+
+**Missing RoArm control code:**
+- Download from [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
+- Place Python SDK files in `RoArm/` directory
+- Minimum required: `serial_simple_ctrl.py`
+- Verify baud rate is set to 115200 in the control script
+
+**Detection not working:**
+- Verify `best.pt` exists in project root
+- Check camera feed is clear and well-lit
+- Pens/markers should be clearly visible against a plain background
+- Lower confidence threshold in `camera_stream.py` (line ~125) if needed
+- Ensure the top 20% of the frame is clear (this region is ignored)
 
 ---
 
