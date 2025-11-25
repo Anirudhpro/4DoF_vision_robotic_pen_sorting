@@ -48,6 +48,9 @@ Vision system for autonomous object manipulation with a 4-DoF RoArm-M2-S. Detect
 git clone https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting.git
 cd 4DoF_vision_robotic_pen_sorting
 
+# Create required directories
+mkdir -p Aruco CalibrationPictures RoArm
+
 # Install dependencies
 pip install opencv-python numpy matplotlib ultralytics pyserial
 
@@ -62,17 +65,11 @@ EOF
 
 ### Required: YOLOv8 Model
 
-The trained YOLOv8 OBB model (`best.pt`, 6.3 MB) is not included in this repository. You need to either:
-- Train your own model on pen/marker images using YOLOv8 OBB
-- Contact the repository owner for the trained model file
-- Place the model file as `best.pt` in the project root directory
+The trained YOLOv8 OBB model (`best.pt`) is not included. Train your own model or obtain separately and place in project root.
 
 ### Required: RoArm Control Library
 
-RoArm-M2-S control code is not included in this repository. Obtain the official control libraries from WaveShare:
-- [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
-- Download the official Python SDK and place control scripts in a `RoArm/` directory
-- Required: `serial_simple_ctrl.py` for serial JSON communication with the robot
+RoArm-M2-S control code is not included. Download from [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S) and place in `RoArm/` directory. Required file: `serial_simple_ctrl.py`
 
 ---
 
@@ -184,34 +181,17 @@ python camera_stream.py /dev/tty.usbserial-210 ResearchDataset
 
 ## Troubleshooting
 
-**Missing directories:**
+**Camera issues:**
 ```bash
-mkdir -p Aruco CalibrationPictures RoArm
+python Misc/camera_list.py  # List available cameras
 ```
 
-**Camera not found:**
-```bash
-python Misc/camera_list.py
-```
-
-**Serial port:**
+**Serial port not found:**
 - macOS: `ls /dev/tty.usbserial-*`
 - Linux: `ls /dev/ttyUSB* /dev/ttyACM*`
-- Update `serial_port` in `config.json` with the correct path
 
-**Calibration fails:**
-- Ensure 100+ checkerboard images in `CalibrationPictures/`
-- Verify ArUco image exists as `Aruco/aruco_calibration.jpg`
+**Calibration error:**
 - Run `check_calibration.py` to verify reprojection error < 0.5px
-
-**YOLOv8 model (best.pt):**
-- Required in project root directory
-- Train your own model or obtain separately
-
-**RoArm control code:**
-- Download from [WaveShare RoArm-M2-S Wiki](https://www.waveshare.com/wiki/RoArm-M2-S)
-- Place in `RoArm/` directory
-- Required: `serial_simple_ctrl.py`
 
 ---
 
