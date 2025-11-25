@@ -429,20 +429,7 @@ python Misc/camera_list.py  # List available cameras
 
 ## Contributing
 
-Contributions are welcome! This project benefits from:
-- Bug reports and feature requests
-- Code improvements and new features
-- Documentation enhancements
-- Hardware compatibility testing
-
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on:
-- How to report bugs
-- How to suggest enhancements
-- Pull request process
-- Code style guidelines
-- Areas where contributions are particularly valuable
-
-Quick contribution checklist:
+Contributions are welcome! Quick checklist:
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -469,8 +456,6 @@ If you use this project in your research, please cite it using the following for
 ### APA
 Prabhakaran, A. (2024). *4DoF Vision-Guided Robotic Pen Sorting* [Computer software]. https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting
 
-GitHub will also generate citations automatically from the [CITATION.cff](CITATION.cff) file. Click "Cite this repository" in the About section on GitHub.
-
 ---
 
 ## License
@@ -492,20 +477,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you need help with this project:
 
-1. **Check the documentation**
-   - Read through this README thoroughly
-   - Review [Troubleshooting](#troubleshooting) section
-   - Check [CONTRIBUTING.md](CONTRIBUTING.md) for development questions
-
-2. **Search existing issues**
-   - [Browse open issues](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
-   - [Check closed issues](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues?q=is%3Aissue+is%3Aclosed) for solutions
-
-3. **Open a new issue**
-   - Use a clear, descriptive title
-   - Include your environment (OS, Python version, hardware)
-   - Provide steps to reproduce the problem
-   - Include relevant logs, error messages, or screenshots
+1. **Check the documentation** - Read through this README and the [Troubleshooting](#troubleshooting) section
+2. **Search existing issues** - [Browse issues](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
+3. **Open a new issue** - Include your environment, steps to reproduce, and error messages
 
 ### Maintainers
 
@@ -540,8 +514,6 @@ If you're interested in this project, you might also like:
 
 <div align="center">
 
-**Questions?** Open an [issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues) • **Want to contribute?** Read [CONTRIBUTING.md](CONTRIBUTING.md)
-
-Made with ❤️ for the robotics and computer vision community
+**Questions?** Open an [issue](https://github.com/Anirudhpro/4DoF_vision_robotic_pen_sorting/issues)
 
 </div>
