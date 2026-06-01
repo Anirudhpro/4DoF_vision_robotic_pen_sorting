@@ -4,7 +4,7 @@ import numpy as np
 data = np.load("calib_data.npz")
 
 # Print all keys in the file
-print("📂 Keys in .npz file:", data.files)
+print("Keys in .npz file:", data.files)
 
 # Extract components
 K = data["K"]
@@ -13,15 +13,15 @@ rvecs = data["rvecs"]
 tvecs = data["tvecs"]
 
 # Print camera matrix
-print("\n📸 Camera Matrix (K):")
+print("\nCamera Matrix (K):")
 print(K)
 
 # Print distortion coefficients
-print("\n🎯 Distortion Coefficients:")
+print("\nDistortion Coefficients:")
 print(dist.ravel())
 
 # Analyze rotation and translation vectors
-print("\n📍 Number of calibration images:", len(rvecs))
+print("\nNumber of calibration images:", len(rvecs))
 
 for i, (rvec, tvec) in enumerate(zip(rvecs, tvecs)):
     print(f"\n--- Image {i + 1} ---")
