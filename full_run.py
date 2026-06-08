@@ -7,6 +7,7 @@ import json
 import glob
 import signal
 import time
+import urllib.request
 
 def load_config():
     """Load configuration from config.json"""
@@ -38,20 +39,19 @@ def run_serial_simple_ctrl():
         print(f"Serial control failed: {e}")
 
 def run_camera_capture():
-    """Run camera_capture.py to save images to Aruco folder"""
-    print("\nStarting camera_capture.py - saving to Aruco folder")
-    print("Press SPACE to capture images, 'q' to quit when done")
-    
+    """Step 2: pick the camera, then capture ArUco photos (camera_pick_and_capture.py)."""
+    print("\nStep 2 — pick the camera + capture the ArUco tag")
+    print("  Pick: Y = use this camera, N = next.  Then: SPACE = photo, Q = done.")
     try:
         subprocess.run([
             sys.executable,
-            "camera_capture.py",
+            "camera_pick_and_capture.py",
             "Aruco"
         ], check=True)
     except KeyboardInterrupt:
-        print("\nCamera capture interrupted by user")
+        print("\nCamera step interrupted by user")
     except subprocess.CalledProcessError as e:
-        print(f"Camera capture failed: {e}")
+        print(f"Camera step failed: {e}")
 
 def manage_aruco_folder():
     """Manage ArUco folder - get user input for image number and rename files"""
@@ -127,6 +127,96 @@ def run_camera_stream():
     except subprocess.CalledProcessError as e:
         print(f"Camera stream failed: {e}")
 
+def _http_json(url, post=False, timeout=4):
+    data = b"{}" if post else None
+    req = urllib.request.Request(url, data=data,
+                                 headers={"Content-Type": "application/json"},
+                                 method=("POST" if post else "GET"))
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def reposition_aruco_prompt():
+    """Step 1: open the control UI in a Chrome app-mode window (served by
+    arm_web_server.py, which holds the serial link). The user picks Reposition or
+    Keep current; on Confirm/Keep the server records the choice and writes
+    robot_tag_xyz into config.json. We then home the robot out of the way so it
+    doesn't block the ArUco scan."""
+    config = load_config()
+    serial_port = config['serial_port']
+    base = "http://localhost:8765"
+    chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    profile = "/tmp/roarm_ui_profile"
+
+    # Robot must be connected to reposition (the arm has to move). If the serial
+    # port isn't there, skip cleanly and keep the existing tag.
+    if not os.path.exists(serial_port):
+        print(f"Robot not connected at {serial_port} — skipping reposition, keeping tag {config.get('robot_tag_xyz')}.")
+        print("(Plug in the robot's USB + 12V power if you want to reposition the ArUco tag.)")
+        return
+
+    # 0) kill any stale server holding port 8765 (else we'd read a cached choice)
+    subprocess.run(["pkill", "-f", "arm_web_server.py"], capture_output=True)
+    time.sleep(0.6)
+
+    # 1) start the web + serial server
+    server = subprocess.Popen([sys.executable, "arm_web_server.py", serial_port,
+                               "--http", "8765", "--no-open"])
+    for _ in range(40):                          # wait up to ~10s for it to come up
+        try:
+            _http_json(f"{base}/api/config"); break
+        except Exception:
+            time.sleep(0.25)
+    else:
+        print("Control server didn't start; keeping existing tag position.")
+        server.terminate(); return
+
+    # 2) open the UI as a Chrome app-mode window (isolated profile so we can close it)
+    chrome_proc = None
+    if os.path.exists(chrome):
+        chrome_proc = subprocess.Popen(
+            [chrome, f"--app={base}/?flow=reposition", f"--user-data-dir={profile}",
+             "--no-first-run", "--no-default-browser-check", "--window-size=1080,980"])
+    else:
+        import webbrowser; webbrowser.open(f"{base}/?flow=reposition")
+    print("Reposition window opened — choose Reposition or Keep current…")
+
+    # 3) wait for the user's choice (Confirm or Keep)
+    action = None
+    try:
+        while action is None:
+            time.sleep(0.4)
+            try:
+                action = _http_json(f"{base}/api/status").get("action")
+            except Exception:
+                pass
+    except KeyboardInterrupt:
+        action = "keep"
+    print(f"Reposition choice: {action}")
+
+    # 4) home the robot out of the way for the ArUco scan
+    try:
+        _http_json(f"{base}/api/home", post=True)
+        print("Homing robot for the ArUco scan…")
+        time.sleep(2.0)
+    except Exception as e:
+        print(f"Home failed: {e}")
+
+    # 5) close the UI + stop the server (frees the serial port for later steps)
+    if chrome_proc:
+        try:
+            chrome_proc.terminate()
+        except Exception:
+            pass
+    server.terminate()
+    try:
+        server.wait(timeout=5)
+    except Exception:
+        pass
+    time.sleep(1.0)   # let the serial port fully release
+    print(f"ArUco tag position is now: {load_config().get('robot_tag_xyz')}")
+
+
 def main():
     """Main orchestration function
     Usage:
@@ -146,16 +236,16 @@ def main():
 
     print("=== 4DoF Vision Robotic Pen Sorting - Full Run ===")
     print("This script will run the complete pipeline:")
-    print("1. Serial control")
-    print("2. Camera capture") 
+    print("1. ArUco tag positioning (reposition via joystick, optional)")
+    print("2. Camera capture")
     print("3. ArUco folder management")
     print("4. ArUco pose estimation")
     print("5. Camera stream with robot control")
     print("\nPress Ctrl+C to interrupt any stage\n")
-    
-    # Step 1: Run serial_simple_ctrl.py
-    print("STEP 1: Serial Control")
-    run_serial_simple_ctrl()
+
+    # Step 1: Prompt to reposition the ArUco tag (joystick writes config.json)
+    print("STEP 1: ArUco Tag Positioning")
+    reposition_aruco_prompt()
     
     # Step 2: Run camera_capture.py
     print("\nSTEP 2: Camera Capture")

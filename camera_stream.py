@@ -432,7 +432,7 @@ def _compute_motion_path_points(center_xy, chosen_tip_xy, color_label, pen_radia
             new_center.copy(),
             np.array([350.0, 0.0])
         ]
-        color_to_y = {"blue": 140, "red": 70, "green": -70, "grayscale": -140}
+        color_to_y = {"blue": -70, "red": 70, "green": 140, "grayscale": -140}
         dest_y = float(color_to_y.get(color_label, 0.0))
         pts.append(np.array([480.0, dest_y]))
         return [p.astype(float) for p in pts]
@@ -619,7 +619,7 @@ def move_roArm(robot_targets, port):
             send_json(ser, {"T": 1041, "x": int(new_center[0]), "y": int(new_center[1]), "z": int(new_center[2]), "t": 2.0}); time.sleep(1.5)
             send_json(ser, {"T": 1041, "x": int(new_center[0]), "y": int(new_center[1]), "z": int(new_center[2]), "t": 3.0}); time.sleep(1.0)
             send_json(ser, {"T": 1041, "x": 350, "y": 0, "z": 200, "t": 2.95}); time.sleep(1.0)
-            color_to_y = {"blue": 140, "red": 70, "green": -70, "grayscale": -140}
+            color_to_y = {"blue": -70, "red": 70, "green": 140, "grayscale": -140}
             dest_y = int(color_to_y.get(color_label, 0))
             print(f"[{ts()}] [Robot] Step 7: Routing color '{color_label}' to y={dest_y}")
             send_json(ser, {"T": 1041, "x": 480, "y": dest_y, "z": 100, "t": 3.0}); time.sleep(1.0)
@@ -694,7 +694,8 @@ def move_roArm(robot_targets, port):
     _active_motion_id = None
 
 # --- Webcam Setup ---
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(int(config.get('camera_index', 0)))
+print(f"[{ts()}] Using camera index {int(config.get('camera_index', 0))}")
 cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
 if not cap.isOpened():
     print("Could not open webcam")

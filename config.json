@@ -1,4 +1,9 @@
 {
-  "robot_tag_xyz": [300, 0, -57],
-  "serial_port": "/dev/tty.usbserial-210"
+  "robot_tag_xyz": [
+    153,
+    -158,
+    -60
+  ],
+  "serial_port": "/dev/tty.usbserial-2110",
+  "camera_index": 0
 }

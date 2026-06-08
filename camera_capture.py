@@ -2,6 +2,15 @@ import cv2
 import os
 import sys
 import glob
+import json
+
+def _camera_index():
+    """Read camera_index from config.json (default 0)."""
+    try:
+        cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+        return int(json.load(open(cfg)).get('camera_index', 0))
+    except Exception:
+        return 0
 
 if len(sys.argv) < 2:
     print("Usage: python camera_capture.py <output_folder>")
@@ -26,7 +35,9 @@ def get_next_filename():
     existing_nums.add(n)
     return os.path.join(output_folder, f"{n}.jpg")
 
-cap = cv2.VideoCapture(0)
+_ci = _camera_index()
+print(f"Using camera index {_ci}")
+cap = cv2.VideoCapture(_ci)
 cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
 if not cap.isOpened():
     print("Could not open webcam")

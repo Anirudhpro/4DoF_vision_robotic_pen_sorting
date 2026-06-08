@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RoArm-M2-S Control</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0c10; --card:#161a22; --card2:#1c212b; --line:#252c38; --line2:#333b49;
+    --fg:#eef1f7; --mut:#7e8a9c; --accent:#3ddc97; --accentd:#1f9d72;
+    --glow:rgba(61,220,151,.22); --danger:#ff6b6b; --warn:#f2c14e;
+  }
+  *{box-sizing:border-box; -webkit-user-select:none; user-select:none}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(1000px 520px at 50% -15%, #18212c 0%, transparent 62%),
+        linear-gradient(180deg,#0c0f14,#0a0c10);
+       color:var(--fg); -webkit-font-smoothing:antialiased;
+       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,Roboto,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:22px 22px 28px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+  h1{font-size:19px;font-weight:680;letter-spacing:-.2px;margin:0}
+  h1 span{color:var(--mut);font-weight:500}
+  .badge{font-size:11px;font-weight:800;letter-spacing:1.5px;padding:7px 14px;border-radius:999px}
+  .badge.mock{background:var(--glow);color:var(--accent);border:1px solid var(--accentd)}
+  .badge.live{background:rgba(255,107,107,.16);color:var(--danger);border:1px solid var(--danger);box-shadow:0 0 16px rgba(255,107,107,.25)}
+  .hdrcoord{font-family:"SF Mono",menlo,consolas,monospace;font-size:14px;color:var(--fg);font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,var(--card),#12151b);border:1px solid var(--line);border-radius:12px;padding:9px 16px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+  .hdrcoord b{color:var(--mut);font-weight:600;margin:0 5px 0 13px}
+  .hdrcoord b:first-child{margin-left:0}
+  .grid{display:grid;grid-template-columns:1.25fr .85fr .85fr;gap:16px;align-items:start}
+  .card{position:relative;background:linear-gradient(180deg,#171b23,#12151b);border:1px solid var(--line);
+        border-radius:20px;padding:18px;box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 16px 40px rgba(0,0,0,.4)}
+  .card h2{margin:0 0 14px;font-size:11px;letter-spacing:1.8px;color:var(--mut);font-weight:800;text-transform:uppercase}
+  .joybase{position:relative;width:260px;height:260px;margin:8px auto 2px;border-radius:50%;
+    background:radial-gradient(circle at 50% 40%, #232a36, #0e1117 72%);border:1px solid var(--line2);
+    box-shadow:inset 0 8px 30px rgba(0,0,0,.6), 0 0 0 6px rgba(255,255,255,.015), 0 10px 30px rgba(0,0,0,.3);touch-action:none}
+  .ring{position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.045);top:50%;left:50%;transform:translate(-50%,-50%)}
+  .cross{position:absolute;background:rgba(255,255,255,.04)}
+  .knob{position:absolute;width:64px;height:64px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 38% 30%, #5cf0bb, #25c489 55%, #178a61 100%);
+    box-shadow:0 10px 24px rgba(0,0,0,.55), 0 0 22px var(--glow), inset 0 2px 7px rgba(255,255,255,.5);cursor:grab;transition:box-shadow .15s}
+  .knob:active{cursor:grabbing}
+  .knob.idle{background:radial-gradient(circle at 38% 30%, #525a6a, #2a313d 60%, #1d232d 100%);
+    box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 2px 6px rgba(255,255,255,.18)}
+  .dirlabel{position:absolute;font-size:10px;color:var(--mut);letter-spacing:1px;font-weight:600}
+  .vtrack{position:relative;width:56px;height:240px;margin:0 auto;border-radius:28px;
+    background:linear-gradient(180deg,#0e1117,#12161d);border:1px solid var(--line);
+    box-shadow:inset 0 4px 18px rgba(0,0,0,.55);touch-action:none}
+  .vfill{position:absolute;left:0;right:0;bottom:0;border-radius:0 0 28px 28px;background:linear-gradient(180deg,var(--accentd),rgba(31,157,114,.12))}
+  .vthumb{position:absolute;left:50%;transform:translate(-50%,-50%);width:72px;height:32px;border-radius:16px;
+    background:linear-gradient(180deg,#3b4250,#252b34);border:1px solid var(--line2);box-shadow:0 6px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);cursor:grab;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--fg);font-variant-numeric:tabular-nums}
+  .htrack{position:relative;height:56px;border-radius:28px;background:linear-gradient(180deg,#0e1117,#12161d);border:1px solid var(--line);
+    box-shadow:inset 0 4px 18px rgba(0,0,0,.55);touch-action:none;margin-top:10px}
+  .hthumb{position:absolute;top:50%;transform:translate(-50%,-50%);width:32px;height:68px;border-radius:16px;
+    background:linear-gradient(180deg,#3b4250,#252b34);border:1px solid var(--line2);box-shadow:0 6px 16px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);cursor:grab}
+  .axislabel{display:flex;justify-content:space-between;color:var(--mut);font-size:11px;margin-top:9px;letter-spacing:.3px}
+  .btnrow{display:flex;gap:8px;margin-top:14px}
+  button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(180deg,var(--card2),#171b22);
+    color:var(--fg);font-weight:650;font-size:13px;cursor:pointer;transition:all .14s ease}
+  button:hover{border-color:var(--accentd);color:var(--accent);background:linear-gradient(180deg,#222a34,#1a1f28)}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  .readout{display:flex;gap:20px;align-items:center;margin-top:16px;flex-wrap:wrap;
+    background:linear-gradient(180deg,var(--card),#12151b);border:1px solid var(--line);border-radius:16px;padding:14px 20px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .stat{font-variant-numeric:tabular-nums}
+  .stat b{color:var(--mut);font-weight:600;font-size:10px;letter-spacing:1px;display:block;text-transform:uppercase;margin-bottom:2px}
+  .stat span{font-size:21px;font-weight:680}
+  .pill{margin-left:auto;font-size:12px;font-weight:800;letter-spacing:.5px;padding:9px 16px;border-radius:999px}
+  .pill.ok{background:var(--glow);color:var(--accent)}
+  .pill.bad{background:rgba(255,107,107,.16);color:var(--danger)}
+  .big{font-size:36px;font-weight:720;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .sub{text-align:center;color:var(--mut);font-size:12px;margin-top:2px;letter-spacing:.3px}
+  .tagbar{margin-top:12px;color:var(--mut);font-size:12px;font-family:"SF Mono",menlo,consolas,monospace;letter-spacing:.2px}
+  .tagmsg{color:var(--accent);font-weight:700}
+  .btn-go{background:linear-gradient(180deg,#3ddc97,#22b97c);color:#04261a;border-color:var(--accent);font-weight:800;box-shadow:0 6px 18px var(--glow)}
+  .btn-go:hover{background:linear-gradient(180deg,#54e9a8,#2bc888);color:#04261a;border-color:var(--accent)}
+  input{-webkit-user-select:text;user-select:text}
+  .cmdrow{display:flex;gap:10px;margin-top:14px}
+  .cmdin{flex:1;background:#0c0f14;border:1px solid var(--line);color:var(--fg);border-radius:12px;
+    padding:13px 16px;font-family:"SF Mono",menlo,consolas,monospace;font-size:14px;outline:none;transition:border-color .14s}
+  .cmdin:focus{border-color:var(--accentd);box-shadow:0 0 0 3px var(--glow)}
+  .cmdin::placeholder{color:#525a68}
+  .dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:14px}
+  .dpad button{padding:13px 0;font-size:13px}
+  .dpad .ctr{display:flex;align-items:center;justify-content:center;color:var(--mut);
+    font-size:12px;font-weight:700;border:1px dashed var(--line2);border-radius:12px;font-variant-numeric:tabular-nums}
+  .chips{display:flex;gap:7px;margin-top:12px;justify-content:center}
+  .chip{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card2);
+    color:var(--mut);cursor:pointer;font-size:12px;font-weight:650;transition:all .14s}
+  .chip:hover{border-color:var(--line2);color:var(--fg)}
+  .chip.on{border-color:var(--accent);color:var(--accent);background:var(--glow)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useEffect} = React;
+const SPEED_XY = 170; // mm/s at full deflection
+
+// Data layer: use the native pywebview bridge when running in the pop-up window,
+// otherwise fall back to the HTTP server (browser mode).
+const PW = () => !!(window.pywebview && window.pywebview.api);
+async function apiConfig(){
+  return PW() ? window.pywebview.api.get_config()
+              : (await fetch('/api/config')).json();
+}
+async function apiMove(p){
+  return PW() ? window.pywebview.api.move(p)
+              : (await fetch('/api/move',{method:'POST',
+                  headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();
+}
+async function apiText(text){
+  return PW() ? window.pywebview.api.command(text)
+              : (await fetch('/api/command',{method:'POST',
+                  headers:{'Content-Type':'application/json'},body:JSON.stringify({text})})).json();
+}
+async function apiSaveTag(p){
+  return PW() ? window.pywebview.api.save_tag(p)
+              : (await fetch('/api/save_tag',{method:'POST',
+                  headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();
+}
+async function apiConfirm(p){
+  return PW() ? window.pywebview.api.confirm(p)
+              : (await fetch('/api/confirm',{method:'POST',
+                  headers:{'Content-Type':'application/json'},body:JSON.stringify(p)})).json();
+}
+async function apiKeepClose(){
+  return PW() ? window.pywebview.api.keep_and_close()
+              : (await fetch('/api/keep_close',{method:'POST',
+                  headers:{'Content-Type':'application/json'},body:'{}'})).json();
+}
+
+function clampAnnulus(x,y,L){
+  const r=Math.hypot(x,y);
+  if(r<1e-6) return [L.r_min,0];
+  if(r>L.r_max) return [x*L.r_max/r, y*L.r_max/r];
+  if(r<L.r_min) return [x*L.r_min/r, y*L.r_min/r];
+  return [x,y];
+}
+
+function Joystick({onAxes}){
+  const base=useRef(null), [pos,setPos]=useState({x:0,y:0}), active=useRef(false);
+  const R=98; // max knob travel px
+  const move=(e)=>{
+    if(!active.current) return;
+    const b=base.current.getBoundingClientRect();
+    let dx=e.clientX-(b.left+b.width/2), dy=e.clientY-(b.top+b.height/2);
+    const d=Math.hypot(dx,dy); if(d>R){dx*=R/d;dy*=R/d;}
+    setPos({x:dx,y:dy}); onAxes(dx/R, dy/R);
+  };
+  const end=()=>{active.current=false; setPos({x:0,y:0}); onAxes(0,0);};
+  return (
+    <div className="joybase" ref={base}
+      onPointerDown={(e)=>{active.current=true; e.target.setPointerCapture(e.pointerId); move(e);}}
+      onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
+      {[80,150,220].map(s=><div key={s} className="ring" style={{width:s,height:s}}/>)}
+      <div className="cross" style={{left:'50%',top:'8%',width:1,height:'84%',transform:'translateX(-50%)'}}/>
+      <div className="cross" style={{top:'50%',left:'8%',height:1,width:'84%',transform:'translateY(-50%)'}}/>
+      <div className="dirlabel" style={{top:8,left:'50%',transform:'translateX(-50%)'}}>FWD +X</div>
+      <div className="dirlabel" style={{bottom:8,left:'50%',transform:'translateX(-50%)'}}>BACK</div>
+      <div className="dirlabel" style={{left:8,top:'50%',transform:'translateY(-50%)'}}>+Y</div>
+      <div className="dirlabel" style={{right:8,top:'50%',transform:'translateY(-50%)'}}>-Y</div>
+      <div className={"knob"+(active.current?"":" idle")}
+        style={{transform:`translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`}}/>
+    </div>
+  );
+}
+
+function VSlider({min,max,value,onChange,fmt}){
+  const tr=useRef(null), drag=useRef(false), H=240;
+  const set=(e)=>{ if(!drag.current)return; const b=tr.current.getBoundingClientRect();
+    let f=1-(e.clientY-b.top)/b.height; f=Math.max(0,Math.min(1,f)); onChange(min+f*(max-min)); };
+  const frac=(value-min)/(max-min);
+  return (<div className="vtrack" ref={tr} style={{height:H}}
+      onPointerDown={(e)=>{drag.current=true;e.target.setPointerCapture(e.pointerId);set(e);}}
+      onPointerMove={set} onPointerUp={()=>drag.current=false} onPointerCancel={()=>drag.current=false}>
+      <div className="vfill" style={{height:`${frac*100}%`}}/>
+      <div className="vthumb" style={{top:`${(1-frac)*100}%`}}>{fmt(value)}</div>
+    </div>);
+}
+
+function HSlider({min,max,value,onChange}){
+  const tr=useRef(null), drag=useRef(false);
+  const set=(e)=>{ if(!drag.current)return; const b=tr.current.getBoundingClientRect();
+    let f=(e.clientX-b.left)/b.width; f=Math.max(0,Math.min(1,f)); onChange(min+f*(max-min)); };
+  const frac=(value-min)/(max-min);
+  return (<div className="htrack" ref={tr}
+      onPointerDown={(e)=>{drag.current=true;e.target.setPointerCapture(e.pointerId);set(e);}}
+      onPointerMove={set} onPointerUp={()=>drag.current=false} onPointerCancel={()=>drag.current=false}>
+      <div className="hthumb" style={{left:`${frac*100}%`}}/>
+    </div>);
+}
+
+function App(){
+  const [cfg,setCfg]=useState(null);
+  const [ro,setRo]=useState({x:120,y:0,z:-20,t:3.14,ok:true,reason:""});
+  const [cmd,setCmd]=useState("");
+  const [step,setStep]=useState(10);
+  const [savedTag,setSavedTag]=useState(null);
+  const [tagMsg,setTagMsg]=useState("");
+  const flow = new URLSearchParams(window.location.search).get('flow');   // 'reposition' from full_run
+  const [mode,setMode]=useState(flow==='reposition' ? 'ask' : 'control');
+  const [done,setDone]=useState(false);
+  const target=useRef({x:120,y:0,z:-20,t:3.14});
+  const axes=useRef({ax:0,ay:0,on:false});
+  const last=useRef(0);
+
+  useEffect(()=>{
+    let ok=false;
+    const boot=()=>{ if(ok)return; apiConfig().then(c=>{ ok=true;
+      setCfg(c); setSavedTag(c.tag||null); target.current={x:c.home[0],y:c.home[1],z:c.home[2],t:3.14};
+      setRo(s=>({...s,x:c.home[0],y:c.home[1],z:c.home[2]}));
+    }).catch(()=>{}); };
+    window.addEventListener('pywebviewready', boot);                 // pop-up: bridge ready event
+    const iv=setInterval(()=>{ if(ok){clearInterval(iv);return;} if(PW()) boot(); }, 50);  // poll for bridge
+    setTimeout(boot, 2500);                                          // fallback: real browser (uses fetch)
+    boot();                                                          // try immediately
+    return ()=>clearInterval(iv);
+  },[]);
+
+  async function send(){
+    const now=performance.now(); if(now-last.current<80) return; last.current=now;
+    const {x,y,z,t}=target.current;
+    try{
+      const j=await apiMove({x,y,z,t});
+      setRo({x,y,z,t,ok:j.ok,reason:j.reason||""});
+    }catch(e){ setRo(s=>({...s,ok:false,reason:"link offline"})); }
+  }
+
+  // jog loop for the XY stick
+  useEffect(()=>{ if(!cfg) return; let raf, prev=performance.now();
+    const loop=(ts)=>{ const dt=(ts-prev)/1000; prev=ts;
+      if(axes.current.on){
+        let {x,y}=target.current;
+        x += (-axes.current.ay)*SPEED_XY*dt;   // up = +X forward
+        y += (-axes.current.ax)*SPEED_XY*dt;   // left = +Y
+        [x,y]=clampAnnulus(x,y,cfg.limits);
+        target.current.x=x; target.current.y=y; send();
+      }
+      raf=requestAnimationFrame(loop);
+    }; raf=requestAnimationFrame(loop); return ()=>cancelAnimationFrame(raf);
+  },[cfg]);
+
+  if(!cfg) return <div className="wrap">Connecting…</div>;
+  const L=cfg.limits, r=Math.hypot(ro.x,ro.y);
+  const setZ=(v)=>{target.current.z=Math.max(L.z_min,Math.min(L.z_max,v)); send();};
+  const setT=(v)=>{target.current.t=Math.max(L.t_min,Math.min(L.t_max,v)); send();};
+  const nudge=(dx,dy)=>{ let [x,y]=clampAnnulus(target.current.x+dx,target.current.y+dy,L);
+    target.current.x=x; target.current.y=y; send(); };
+  const home=()=>{target.current={...target.current,x:cfg.home[0],y:cfg.home[1],z:cfg.home[2]}; send();};
+  const goLast=()=>{ if(!savedTag) return;
+    target.current={...target.current, x:savedTag[0], y:savedTag[1], z:savedTag[2]}; send(); };
+  async function sendText(){
+    if(!cmd.trim()) return;
+    const j=await apiText(cmd);
+    const s=j.sent;
+    if(s && s.x!==undefined){ target.current={x:s.x,y:s.y,z:s.z,t:s.t}; }
+    setRo(o=>({...o, ...(s&&s.x!==undefined?{x:s.x,y:s.y,z:s.z,t:s.t}:{}), ok:j.ok, reason:j.reason||""}));
+  }
+  async function saveTag(){
+    const {x,y,z}=target.current;
+    const j=await apiSaveTag({x,y,z});
+    if(j.ok){ setSavedTag(j.saved); setTagMsg("saved ✓"); }
+    else { setTagMsg("save failed: "+(j.reason||"")); }
+    setTimeout(()=>setTagMsg(""), 3500);
+  }
+  async function confirmPos(){
+    const {x,y,z}=target.current;
+    const j=await apiConfirm({x,y,z});   // saves config + sets server action=confirm
+    if(j.ok){ setSavedTag(j.saved); setDone(true); }
+    else { setTagMsg("confirm failed: "+(j.reason||"")); setTimeout(()=>setTagMsg(""),3500); }
+  }
+  async function keepOld(){ await apiKeepClose(); setDone(true); }   // server action=keep
+
+  if(done) return (<div className="wrap" style={{minHeight:'88vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div className="card" style={{textAlign:'center',maxWidth:440,padding:'44px 32px'}}>
+      <div style={{fontSize:44,color:'var(--accent)',marginBottom:8}}>✓</div>
+      <div style={{fontSize:19,fontWeight:700,marginBottom:8}}>Position set — continuing</div>
+      <div className="sub" style={{fontSize:13}}>Homing the robot for the ArUco scan. You can close this window.</div>
+    </div>
+  </div>);
+
+  if(mode==='ask') return (<div className="wrap" style={{minHeight:'88vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div className="card" style={{textAlign:'center',maxWidth:480,padding:'40px 34px'}}>
+      <h2 style={{margin:'0 0 18px'}}>ArUco tag position</h2>
+      <div className="sub" style={{fontSize:13,marginBottom:6}}>last saved position</div>
+      <div style={{fontSize:26,fontWeight:720,fontVariantNumeric:'tabular-nums',marginBottom:26,fontFamily:'monospace'}}>
+        {savedTag?`[ ${savedTag.join(' ,  ')} ]`:'none'}</div>
+      <div style={{fontSize:15,color:'var(--mut)',marginBottom:26}}>Reposition the tag, or keep the current position?</div>
+      <div style={{display:'flex',gap:12,justifyContent:'center'}}>
+        <button style={{flex:'none',padding:'13px 24px'}} onClick={keepOld}>Keep current</button>
+        <button className="btn-go" style={{flex:'none',padding:'13px 26px'}} onClick={()=>setMode('control')}>Reposition</button>
+      </div>
+    </div>
+  </div>);
+
+  return (<div className="wrap">
+    <header>
+      <h1>RoArm-M2-S <span>· joystick control</span></h1>
+      <div className="hdrcoord">
+        <b>X</b> {Math.round(ro.x)} <b>Y</b> {Math.round(ro.y)} <b>Z</b> {Math.round(ro.z)}
+        <b>grip</b> {ro.t.toFixed(2)} <b>r</b> <span style={{color:(r>=L.r_min&&r<=L.r_max)?'var(--fg)':'var(--danger)'}}>{Math.round(r)}</span>
+      </div>
+      <div className={"badge "+(cfg.mock?"mock":"live")}>{cfg.mock?"MOCK":"LIVE"}</div>
+    </header>
+    <div className="grid">
+      <div className="card">
+        <h2>Move · X / Y</h2>
+        <Joystick onAxes={(ax,ay)=>{axes.current={ax,ay,on:(ax||ay)!==0};}}/>
+        <div className="sub">push &amp; hold to jog · or tap the arrows to step</div>
+        <div className="dpad">
+          <span></span>
+          <button onClick={()=>nudge(+step,0)}>▲ +X</button>
+          <span></span>
+          <button onClick={()=>nudge(0,+step)}>◀ +Y</button>
+          <div className="ctr">{step} mm</div>
+          <button onClick={()=>nudge(0,-step)}>-Y ▶</button>
+          <span></span>
+          <button onClick={()=>nudge(-step,0)}>▼ -X</button>
+          <span></span>
+        </div>
+        <div className="chips">
+          {[5,10,25,50].map(s=>
+            <span key={s} className={"chip"+(step===s?" on":"")} onClick={()=>setStep(s)}>{s}mm</span>)}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Height · Z</h2>
+        <VSlider min={L.z_min} max={L.z_max} value={ro.z} onChange={setZ} fmt={v=>Math.round(v)}/>
+        <div className="axislabel"><span>{L.z_max} up</span><span>{L.z_min} down</span></div>
+        <div className="btnrow">
+          <button onClick={()=>setZ(target.current.z+step)}>▲ up</button>
+          <button onClick={()=>setZ(target.current.z-step)}>▼ down</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Gripper</h2>
+        <div className="big">{ro.t.toFixed(2)}</div>
+        <div className="sub">{ro.t<1.6?"OPEN":ro.t>2.7?"CLOSED":"partial"}</div>
+        <HSlider min={L.t_min} max={L.t_max} value={ro.t} onChange={setT}/>
+        <div className="axislabel"><span>open {L.t_min}</span><span>{L.t_max} closed</span></div>
+        <div className="btnrow">
+          <button onClick={()=>setT(L.t_min)}>open</button>
+          <button onClick={()=>setT(target.current.t-0.1)}>−</button>
+          <button onClick={()=>setT(target.current.t+0.1)}>+</button>
+          <button onClick={()=>setT(L.t_max)}>close</button>
+        </div>
+      </div>
+    </div>
+
+    <div className="card" style={{marginTop:16}}>
+      <h2>Manual command · type like the RoArm serial</h2>
+      <div className="cmdrow">
+        <input className="cmdin" value={cmd} spellCheck={false}
+          onChange={e=>setCmd(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') sendText(); }}
+          placeholder={'x y z t   e.g.  300 0 100 3.14    — or full JSON  {"T":1041,"x":300,"y":0,"z":100,"t":3.14}'} />
+        <button style={{flex:'none',padding:'0 26px'}} onClick={sendText}>Send</button>
+      </div>
+    </div>
+
+    <div className="readout">
+      <div className="stat"><b>X</b><span>{Math.round(ro.x)}</span></div>
+      <div className="stat"><b>Y</b><span>{Math.round(ro.y)}</span></div>
+      <div className="stat"><b>Z</b><span>{Math.round(ro.z)}</span></div>
+      <div className="stat"><b>grip</b><span>{ro.t.toFixed(2)}</span></div>
+      <div className="stat"><b>radial</b><span style={{color:(r>=L.r_min&&r<=L.r_max)?'var(--fg)':'var(--danger)'}}>{Math.round(r)}</span></div>
+      <button style={{flex:'none',padding:'8px 14px'}} onClick={home}>HOME</button>
+      <button style={{flex:'none',padding:'8px 14px'}} onClick={goLast} disabled={!savedTag}
+        title={savedTag?`drive arm to the saved ArUco tag [${savedTag.join(', ')}]`:'no saved tag'}>↩ Go to ArUco tag</button>
+      <button style={{flex:'none',padding:'8px 14px',borderColor:'var(--accentd)',color:'var(--accent)'}} onClick={saveTag}>★ Save tag</button>
+      <button style={{flex:'none',padding:'10px 16px'}} onClick={keepOld}>Keep old &amp; continue</button>
+      <button className="btn-go" style={{flex:'none',padding:'10px 20px'}} onClick={confirmPos}>✓ Confirm &amp; Continue</button>
+      <div className={"pill "+(ro.ok?"ok":"bad")}>{ro.ok?"IN BOUNDS":("BLOCKED · "+ro.reason)}</div>
+    </div>
+    <div className="tagbar">
+      ArUco tag saved in config: {savedTag?`[${savedTag.join(', ')}]`:'none'}
+      {tagMsg && <span className="tagmsg"> · {tagMsg}</span>}
+    </div>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

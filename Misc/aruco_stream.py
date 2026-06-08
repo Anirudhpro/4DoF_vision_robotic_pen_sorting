@@ -7,7 +7,7 @@ camMatrix = calib['K']
 distCoeffs = calib['dist']
 
 # Parameters
-markerLength = 0.2032  # in meters (8 inches)
+markerLength = 0.100  # in meters (100 mm printed ArUco tag)
 estimatePose = True
 showRejected = True
 
