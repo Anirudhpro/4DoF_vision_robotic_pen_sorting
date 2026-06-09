@@ -8,6 +8,7 @@ dist = data['dist']
 
 # Open your camera
 cap = cv2.VideoCapture(0)  # Use correct camera index if needed
+cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)  # fixed focus
 
 while True:
     ret, frame = cap.read()

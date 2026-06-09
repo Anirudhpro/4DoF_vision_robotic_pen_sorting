@@ -12,6 +12,8 @@ import os
 import shutil
 from datetime import datetime
 import matplotlib
+if "--web" in sys.argv:
+    matplotlib.use("Agg")   # headless web mode: render plots to images, never open GUI windows
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc  # for drawing angle arcs
 plt.ion()  # enable interactive mode so plt.show() windows update live
@@ -706,8 +708,9 @@ if not cap.isOpened():
     _tee.detach_file()
     _log_fh.close()
     sys.exit(1)
-cv2.namedWindow("Pen Detection", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("Pen Detection", 640, 480)
+if "--web" not in sys.argv:        # web mode streams to the browser; no OpenCV window
+    cv2.namedWindow("Pen Detection", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Pen Detection", 640, 480)
 
 # --- Detection Queue ---
 robot_queue = []
@@ -1132,6 +1135,122 @@ def maybe_auto_trigger(detections_for_this_frame):
     on_spacebar(detections_for_this_frame, trigger_source="AUTO")
     last_auto_trigger_time = now
 
+# ----------------- Optional web streaming mode (--web) -----------------
+# Streams the SAME annotated detection frame + XY plot to a browser, with AUTO /
+# trigger / quit as web controls. Reuses all detection + motion + auto logic.
+WEB = "--web" in sys.argv
+WEB_PORT = 8770
+_web_trigger = False
+_web_quit = False
+_latest_plot_jpg = None
+_plot_lock = threading.Lock()
+
+_WEB_HTML = """<!DOCTYPE html><html><head><meta charset=utf-8><title>RoArm Camera Stream</title>
+<style>
+  body{margin:0;background:radial-gradient(1000px 520px at 50% -15%,#18212c,#0a0c10);
+    color:#e7e9ef;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  h1{font-size:19px;font-weight:680;margin:0} h1 span{color:#7e8a9c;font-weight:500}
+  .grid{display:flex;gap:16px;align-items:flex-start}
+  .card{background:linear-gradient(180deg,#171b23,#12151b);border:1px solid #252c38;border-radius:18px;
+    padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.4)}
+  .vid{flex:2} .plot{flex:1}
+  .card h2{margin:0 0 10px;font-size:11px;letter-spacing:1.5px;color:#7e8a9c;font-weight:800;text-transform:uppercase}
+  img{width:100%;display:block;border-radius:10px;background:#000;max-height:62vh;object-fit:contain}
+  .row{display:flex;gap:10px;margin-top:14px}
+  button{flex:1;padding:13px;border-radius:12px;border:1px solid #252c38;background:linear-gradient(180deg,#1c212b,#171b22);
+    color:#e7e9ef;font-weight:700;font-size:14px;cursor:pointer}
+  #trig{background:linear-gradient(180deg,#3ddc97,#22b97c);color:#04261a;border-color:#3ddc97}
+  #auto.on{background:rgba(61,220,151,.18);color:#3ddc97;border-color:#1f9d72}
+  #stop{flex:none;padding:13px 22px;border-color:#ff6b6b;color:#ff6b6b}
+  .hint{color:#7e8a9c;font-size:12px;margin-top:10px}
+</style></head><body><div class="wrap">
+  <header><h1>RoArm-M2-S <span>&middot; camera stream</span></h1></header>
+  <div class="grid">
+    <div class="card vid"><h2>Detection</h2><img src="/stream"></div>
+    <div class="card plot"><h2>Workspace XY</h2><img id="plot" src="/plot"></div>
+  </div>
+  <div class="row">
+    <button id="trig">&#9679; TRIGGER (Space)</button>
+    <button id="auto">AUTO: off (U)</button>
+    <button id="stop">Stop</button>
+  </div>
+  <div class="hint">Space = trigger motion &middot; U = toggle auto &middot; the no-detect zone + AUTO badge are drawn on the video.</div>
+</div>
+<script>
+  function post(p){ return fetch(p,{method:'POST'}); }
+  document.getElementById('trig').onclick=function(){post('/trigger');};
+  document.getElementById('auto').onclick=function(){post('/auto');};
+  document.getElementById('stop').onclick=function(){post('/quit');};
+  document.addEventListener('keydown',function(e){
+    if(e.code==='Space'){e.preventDefault();post('/trigger');}
+    else if(e.key==='u'||e.key==='U'){post('/auto');}
+  });
+  setInterval(function(){ document.getElementById('plot').src='/plot?'+Date.now(); },500);
+  setInterval(function(){ fetch('/state').then(function(r){return r.json();}).then(function(s){
+    var a=document.getElementById('auto'); a.textContent='AUTO: '+(s.auto?'on':'off')+' (U)'; a.className=s.auto?'on':'';
+  }); },700);
+</script></body></html>"""
+
+if WEB:
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    class _WebHandler(BaseHTTPRequestHandler):
+        def log_message(self, *a): pass
+        def _b(self, code, body, ctype):
+            data = body.encode() if isinstance(body, str) else body
+            self.send_response(code); self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
+        def do_GET(self):
+            p = self.path.split("?")[0]
+            if p == "/":
+                self._b(200, _WEB_HTML, "text/html; charset=utf-8")
+            elif p == "/state":
+                self._b(200, json.dumps({"auto": auto_mode}), "application/json")
+            elif p == "/plot":
+                with _plot_lock:
+                    jpg = _latest_plot_jpg
+                if jpg is None:
+                    self._b(200, b"", "image/jpeg")
+                else:
+                    self._b(200, jpg, "image/jpeg")
+            elif p == "/stream":
+                self.send_response(200)
+                self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+                self.end_headers()
+                try:
+                    while not _web_quit:
+                        with latest_lock:
+                            fr = None if latest_annotated is None else latest_annotated.copy()
+                        if fr is None:
+                            time.sleep(0.05); continue
+                        ok, buf = cv2.imencode(".jpg", fr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                        if ok:
+                            self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " +
+                                             str(len(buf)).encode() + b"\r\n\r\n" + buf.tobytes() + b"\r\n")
+                        time.sleep(0.04)
+                except Exception:
+                    pass
+            else:
+                self.send_response(404); self.end_headers()
+        def do_POST(self):
+            global _web_trigger, _web_quit, auto_mode
+            p = self.path.split("?")[0]
+            if p == "/trigger":
+                _web_trigger = True
+            elif p == "/auto":
+                auto_mode = not auto_mode
+            elif p == "/quit":
+                _web_quit = True
+            self._b(200, b"ok", "text/plain")
+    def _start_web():
+        try:
+            ThreadingHTTPServer(("127.0.0.1", WEB_PORT), _WebHandler).serve_forever()
+        except Exception as e:
+            print(f"[{ts()}] Web server error: {e}")
+    threading.Thread(target=_start_web, daemon=True).start()
+    print(f"[{ts()}] Web stream at http://localhost:{WEB_PORT}")
+
 # ----------------- Main Loop -----------------
 try:
     while True:
@@ -1329,37 +1448,68 @@ try:
                 except Exception as e:
                     print(f"[{ts()}] ERROR writing video frame: {e}")
 
-        # Show UI
-        cv2.imshow("Pen Detection", annotated)
-        # Update the matplotlib viz every frame to match the video/frame rate
-        if show_viz_window:
-            try:
-                update_interactive_viz(last_detection_metadata, sent_robot_commands)
-            except Exception as e:
-                print(f"[{ts()}] Viz update error: {e}")
-        _frame_counter += 1
+        # Show UI — web stream OR OpenCV windows
+        if WEB:
+            # EXACT same interactive viz as before (update_interactive_viz) — we just
+            # capture that figure to an image and stream it into the web panel instead
+            # of popping a matplotlib window. The viz logic itself is unchanged.
+            if (_frame_counter % 3) == 0:
+                try:
+                    update_interactive_viz(last_detection_metadata, sent_robot_commands)
+                    if viz_fig is not None:
+                        _buf = io.BytesIO()
+                        viz_fig.savefig(_buf, format='png', bbox_inches='tight', pad_inches=0.1)
+                        _arr = np.frombuffer(_buf.getvalue(), dtype=np.uint8); _buf.close()
+                        _pim = cv2.imdecode(_arr, 1)
+                        if _pim is not None:
+                            _ok, _pb = cv2.imencode(".jpg", _pim)
+                            if _ok:
+                                with _plot_lock:
+                                    _latest_plot_jpg = _pb.tobytes()
+                except Exception as e:
+                    print(f"[{ts()}] Web viz error: {e}")
+            _frame_counter += 1
+            # Auto trigger if enabled
+            maybe_auto_trigger(detections_for_this_frame)
+            # Web controls (SPACE-equivalent trigger, Stop)
+            if _web_trigger:
+                _web_trigger = False
+                on_spacebar(detections_for_this_frame, trigger_source="WEB")
+            if _web_quit:
+                print(f"[{ts()}] Web stop received.")
+                break
+            time.sleep(0.01)
+        else:
+            cv2.imshow("Pen Detection", annotated)
+            # Update the matplotlib viz every frame to match the video/frame rate
+            if show_viz_window:
+                try:
+                    update_interactive_viz(last_detection_metadata, sent_robot_commands)
+                except Exception as e:
+                    print(f"[{ts()}] Viz update error: {e}")
+            _frame_counter += 1
 
-        # Auto trigger if enabled
-        maybe_auto_trigger(detections_for_this_frame)
+            # Auto trigger if enabled
+            maybe_auto_trigger(detections_for_this_frame)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            print(f"[{ts()}] Quit key received.")
-            break
-        elif key == 32:  # Spacebar
-            on_spacebar(detections_for_this_frame, trigger_source="SPACE")
-        elif key in (ord('u'), ord('U')):  # Toggle Auto
-            auto_mode = not auto_mode
-            state = "ON" if auto_mode else "OFF"
-            print(f"[{ts()}] [UI] Auto mode toggled {state}")
-        elif key == ord('p'):
-            show_plot = not show_plot
-            state = "ON" if show_plot else "OFF"
-            print(f"[{ts()}] [UI] Plot overlay toggled {state}")
-        elif key == ord('v'):
-            show_viz_window = not show_viz_window
-            state = "ON" if show_viz_window else "OFF"
-            print(f"[{ts()}] [UI] Separate viz window toggled {state}")
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                print(f"[{ts()}] Quit key received.")
+                break
+            elif key == 32:  # Spacebar
+                on_spacebar(detections_for_this_frame, trigger_source="SPACE")
+            elif key in (ord('u'), ord('U')):  # Toggle Auto
+                auto_mode = not auto_mode
+                state = "ON" if auto_mode else "OFF"
+                print(f"[{ts()}] [UI] Auto mode toggled {state}")
+            elif key == ord('p'):
+                show_plot = not show_plot
+                state = "ON" if show_plot else "OFF"
+                print(f"[{ts()}] [UI] Plot overlay toggled {state}")
+            elif key == ord('v'):
+                show_viz_window = not show_viz_window
+                state = "ON" if show_viz_window else "OFF"
+                print(f"[{ts()}] [UI] Separate viz window toggled {state}")
 
 except KeyboardInterrupt:
     print(f"\n[{ts()}] KeyboardInterrupt received. Shutting down...")

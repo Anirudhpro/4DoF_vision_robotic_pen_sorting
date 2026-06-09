@@ -23,6 +23,8 @@ else:
     cap = cv2.VideoCapture(_ci)
     if not cap.isOpened():
         raise RuntimeError("Could not open webcam and no captured photo found.")
+    try: cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)   # fixed focus
+    except Exception: pass
     ret, image = cap.read()
     cap.release()
     if not ret:

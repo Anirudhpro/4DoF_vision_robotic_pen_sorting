@@ -1,8 +1,8 @@
 {
   "robot_tag_xyz": [
-    153,
-    -158,
-    -60
+    163,
+    -148,
+    -63
   ],
   "serial_port": "/dev/tty.usbserial-2110",
   "camera_index": 0

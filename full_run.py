@@ -39,19 +39,59 @@ def run_serial_simple_ctrl():
         print(f"Serial control failed: {e}")
 
 def run_camera_capture():
-    """Step 2: pick the camera, then capture ArUco photos (camera_pick_and_capture.py)."""
-    print("\nStep 2 — pick the camera + capture the ArUco tag")
-    print("  Pick: Y = use this camera, N = next.  Then: SPACE = photo, Q = done.")
+    """Step 2: open the web capture screen (live video + thumbnail sidebar +
+    card-pick) in a Chrome app-window. The user picks the camera, captures the
+    ArUco tag, and picks the best photo, which the server saves as
+    aruco_calibration.jpg (recording the camera index). This replaces both the
+    old OpenCV picker AND the old folder-management step."""
+    config = load_config()
+    serial_port = config['serial_port']
+    base = "http://localhost:8765"
+    chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    profile = "/tmp/roarm_ui_capture"   # separate profile from the reposition window
+
+    subprocess.run(["pkill", "-f", "arm_web_server.py"], capture_output=True)
+    time.sleep(0.6)
+    server = subprocess.Popen([sys.executable, "arm_web_server.py", serial_port,
+                               "--http", "8765", "--no-open"])
+    for _ in range(40):
+        try:
+            _http_json(f"{base}/api/config"); break
+        except Exception:
+            time.sleep(0.25)
+    else:
+        print("Capture server didn't start; skipping capture.")
+        server.terminate(); return False
+
+    chrome_proc = None
+    if os.path.exists(chrome):
+        chrome_proc = subprocess.Popen(
+            [chrome, f"--app={base}/?flow=capture", f"--user-data-dir={profile}",
+             "--no-first-run", "--no-default-browser-check", "--window-size=1180,1000"])
+    else:
+        import webbrowser; webbrowser.open(f"{base}/?flow=capture")
+    print("Capture window opened — pick the camera, SPACE to snap, then pick the best photo.")
+
+    action = None
     try:
-        subprocess.run([
-            sys.executable,
-            "camera_pick_and_capture.py",
-            "Aruco"
-        ], check=True)
+        while action is None:
+            time.sleep(0.4)
+            try:
+                action = _http_json(f"{base}/api/status").get("action")
+            except Exception:
+                pass
     except KeyboardInterrupt:
-        print("\nCamera step interrupted by user")
-    except subprocess.CalledProcessError as e:
-        print(f"Camera step failed: {e}")
+        pass
+    print(f"Capture result: {action}")
+
+    if chrome_proc:
+        try: chrome_proc.terminate()
+        except Exception: pass
+    server.terminate()
+    try: server.wait(timeout=5)
+    except Exception: pass
+    time.sleep(1.0)
+    return action == "captured"
 
 def manage_aruco_folder():
     """Manage ArUco folder - get user input for image number and rename files"""
@@ -109,23 +149,57 @@ def run_aruco_pose():
     return True
 
 def run_camera_stream():
-    """Run camera_stream.py with the configured serial port"""
+    """Step 4: run camera_stream.py in --web mode and open it in a Chrome app
+    window. The detection video (boxes/tips/angles + no-detect zone + AUTO badge),
+    the XY workspace plot, and the AUTO / trigger / Stop controls all live in that
+    one window — no separate OpenCV or matplotlib windows. SPACE and U work from
+    the page itself (fixes the old focus bug). Click Stop to finish."""
     config = load_config()
     serial_port = config['serial_port']
-    
-    print(f"\nStarting camera_stream.py with port: {serial_port}")
-    
+    base = "http://localhost:8770"
+    chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    profile = "/tmp/roarm_ui_stream"
+
+    print(f"\nStarting camera_stream.py (web) with port: {serial_port}")
+    proc = subprocess.Popen([sys.executable, "camera_stream.py", serial_port,
+                             "ResearchDataset", "--web"])
+
+    # Wait for its web server to come up (model + camera load can take a while).
+    up = False
+    for _ in range(120):                      # up to ~30s
+        if proc.poll() is not None:           # it exited/crashed before serving
+            break
+        try:
+            _http_json(f"{base}/state"); up = True; break
+        except Exception:
+            time.sleep(0.25)
+    if not up:
+        print("Camera-stream web server didn't come up; see its output above.")
+        try: proc.wait()
+        except KeyboardInterrupt:
+            try: proc.terminate()
+            except Exception: pass
+        return
+
+    chrome_proc = None
+    if os.path.exists(chrome):
+        chrome_proc = subprocess.Popen(
+            [chrome, f"--app={base}", f"--user-data-dir={profile}",
+             "--no-first-run", "--no-default-browser-check", "--window-size=1280,920"])
+    else:
+        import webbrowser; webbrowser.open(base)
+    print("Camera-stream window opened — Space = trigger, U = toggle auto, Stop = finish.")
+
+    # Run until the user clicks Stop (camera_stream exits) or Ctrl+C.
     try:
-        subprocess.run([
-            sys.executable,
-            "camera_stream.py",
-            serial_port,
-            "ResearchDataset"
-        ], check=True)
+        proc.wait()
     except KeyboardInterrupt:
         print("\nCamera stream interrupted by user")
-    except subprocess.CalledProcessError as e:
-        print(f"Camera stream failed: {e}")
+        try: proc.terminate()
+        except Exception: pass
+    if chrome_proc:
+        try: chrome_proc.terminate()
+        except Exception: pass
 
 def _http_json(url, post=False, timeout=4):
     data = b"{}" if post else None
@@ -237,34 +311,29 @@ def main():
     print("=== 4DoF Vision Robotic Pen Sorting - Full Run ===")
     print("This script will run the complete pipeline:")
     print("1. ArUco tag positioning (reposition via joystick, optional)")
-    print("2. Camera capture")
-    print("3. ArUco folder management")
-    print("4. ArUco pose estimation")
-    print("5. Camera stream with robot control")
+    print("2. Camera capture + pick (web UI)")
+    print("3. ArUco pose estimation")
+    print("4. Camera stream with robot control")
     print("\nPress Ctrl+C to interrupt any stage\n")
 
     # Step 1: Prompt to reposition the ArUco tag (joystick writes config.json)
     print("STEP 1: ArUco Tag Positioning")
     reposition_aruco_prompt()
     
-    # Step 2: Run camera_capture.py
-    print("\nSTEP 2: Camera Capture")
-    run_camera_capture()
-    
-    # Step 3: Manage ArUco folder
-    print("\nSTEP 3: ArUco Folder Management")
-    if not manage_aruco_folder():
-        print("ArUco folder management failed, exiting")
+    # Step 2: Web capture screen (pick camera + photo + pick) -> aruco_calibration.jpg
+    print("\nSTEP 2: Camera Capture + Pick (web UI)")
+    if not run_camera_capture():
+        print("Camera capture not completed, exiting")
         return
-    
-    # Step 4: Run aruco_pose.py
-    print("\nSTEP 4: ArUco Pose Estimation")
+
+    # Step 3: Run aruco_pose.py (reads the photo picked in Step 2)
+    print("\nSTEP 3: ArUco Pose Estimation")
     if not run_aruco_pose():
         print("ArUco pose estimation failed, exiting")
         return
-    
-    # Step 5: Run camera_stream.py
-    print("\nSTEP 5: Camera Stream with Robot Control")
+
+    # Step 4: Run camera_stream.py
+    print("\nSTEP 4: Camera Stream with Robot Control")
     run_camera_stream()
     
     print("\n=== Full run completed ===")

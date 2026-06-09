@@ -11,6 +11,7 @@ cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Error: Could not open camera.")
     exit()
+cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)  # fixed focus
 
 print("Press SPACE to save undistorted image. Press ESC to exit.")
 

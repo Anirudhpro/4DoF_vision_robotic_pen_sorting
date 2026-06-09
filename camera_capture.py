@@ -38,7 +38,7 @@ def get_next_filename():
 _ci = _camera_index()
 print(f"Using camera index {_ci}")
 cap = cv2.VideoCapture(_ci)
-cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
+cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
 if not cap.isOpened():
     print("Could not open webcam")
     sys.exit(1)

@@ -25,6 +25,8 @@ def main():
         if not cap.isOpened():
             cap.release()
             continue
+        try: cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)   # fixed focus
+        except Exception: pass
         print(f"  index {idx}: showing…  (Y=select  N=next  Q=quit)")
         while True:
             ok, frame = cap.read()

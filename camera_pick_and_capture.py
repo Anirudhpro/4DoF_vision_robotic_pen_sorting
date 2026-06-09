@@ -35,6 +35,8 @@ def pick_camera():
         cap = cv2.VideoCapture(idx)
         if not cap.isOpened():
             cap.release(); continue
+        try: cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)   # fixed focus
+        except Exception: pass
         while True:
             ok, frame = cap.read()
             if not ok:
@@ -82,7 +84,7 @@ def main():
         print(f"(could not save camera_index: {e})")
 
     try:
-        cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
+        cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
     except Exception:
         pass
 
