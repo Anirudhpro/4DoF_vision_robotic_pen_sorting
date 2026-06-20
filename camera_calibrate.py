@@ -16,8 +16,6 @@ objpoints = []
 imgpoints = []
 
 # Paths
-# input_folder = 'ExtIntVals/Data 4/CalibrationPictures'
-# output_folder = 'ExtIntVals/Data 4/CalibratedLinePictures'
 input_folder = 'CalibrationPictures'
 output_folder = 'CalibratedLinePictures'
 os.makedirs(output_folder, exist_ok=True)

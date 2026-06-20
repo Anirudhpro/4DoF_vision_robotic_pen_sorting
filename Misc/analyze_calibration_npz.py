@@ -1,22 +1,17 @@
 import numpy as np
 
-# Load the calibration file
 data = np.load("calib_data.npz")
 
-# Print all keys in the file
 print("Keys in .npz file:", data.files)
 
-# Extract components
 K = data["K"]
 dist = data["dist"]
 rvecs = data["rvecs"]
 tvecs = data["tvecs"]
 
-# Print camera matrix
 print("\nCamera Matrix (K):")
 print(K)
 
-# Print distortion coefficients
 print("\nDistortion Coefficients:")
 print(dist.ravel())
 

@@ -109,22 +109,18 @@ def manage_aruco_folder():
     aruco_folder = "Aruco"
     target_file = os.path.join(aruco_folder, f"{image_num}.jpg")
     calibration_file = os.path.join(aruco_folder, "aruco_calibration.jpg")
-    
-    # Check if the target file exists
+
     if not os.path.exists(target_file):
         print(f"Error: {target_file} does not exist!")
         return False
-    
-    # Delete existing aruco_calibration.jpg if it exists
+
     if os.path.exists(calibration_file):
         os.remove(calibration_file)
         print(f"Deleted existing {calibration_file}")
-    
-    # Rename the selected image to aruco_calibration.jpg
+
     os.rename(target_file, calibration_file)
     print(f"Renamed {target_file} to {calibration_file}")
-    
-    # Delete all other .jpg files in the folder
+
     jpg_files = glob.glob(os.path.join(aruco_folder, "*.jpg"))
     for jpg_file in jpg_files:
         if os.path.basename(jpg_file) != "aruco_calibration.jpg":

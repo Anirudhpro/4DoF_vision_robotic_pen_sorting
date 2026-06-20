@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-# Load calibration data
 with np.load('calib_data.npz') as X:
     K, dist = X['K'], X['dist']
 
@@ -24,10 +23,8 @@ while True:
         print("Warning: Frame is empty. Skipping.")
         continue
 
-    # Undistort
     undistorted = cv2.undistort(frame, K, dist)
 
-    # Show
     cv2.imshow('Undistorted Stream', undistorted)
 
     key = cv2.waitKey(1)

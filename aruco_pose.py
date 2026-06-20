@@ -3,7 +3,6 @@ import numpy as np
 import json
 import os
 
-# Load calibration data
 calib = np.load('calib_data.npz')
 camera_matrix = calib['K']
 dist_coeffs = calib['dist']
@@ -32,19 +31,14 @@ else:
 if image is None:
     raise RuntimeError(f"Could not load ArUco image ({img_path}).")
 
-# Undistort
 h, w = image.shape[:2]
-# new_camera_matrix, _ = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w, h), 1)
-# undistorted = cv2.undistort(image, camera_matrix, dist_coeffs, None, new_camera_matrix)
 
 undistorted = image.copy()
 
-# ArUco dictionary and parameters
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 parameters = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
 
-# Detect markers
 corners, ids, _ = detector.detectMarkers(undistorted)
 
 # Marker pose estimation
@@ -64,7 +58,6 @@ if ids is not None:
         print(f"Translation (mm): {tvec.T * 1000}")
         print(f"Rotation vector: {rvec.T}")
 
-    # Save pose and calibration data to JSON
     pose_data = {
         "camera_matrix": camera_matrix.tolist(),
         "dist_coeffs": dist_coeffs.tolist(),
@@ -81,7 +74,6 @@ if ids is not None:
 else:
     print("No marker detected.")
 
-# Show result
 cv2.imshow("Pose Estimation", undistorted)
 cv2.imwrite("aruco_tag_detection.jpg", undistorted)
 cv2.waitKey(3000)  # waits 3 seconds

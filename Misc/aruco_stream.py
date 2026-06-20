@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-# Load camera calibration
 calib = np.load('calib_data.npz')
 camMatrix = calib['K']
 distCoeffs = calib['dist']
@@ -24,7 +23,6 @@ objPoints = np.array([
     [-markerLength / 2, -markerLength / 2, 0]
 ], dtype=np.float32)
 
-# Open video stream
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Error: Could not open camera.")
@@ -41,7 +39,6 @@ while True:
 
     imageCopy = image.copy()
 
-    # Detect ArUco markers
     corners, ids, rejected = detector.detectMarkers(image)
 
     if ids is not None:
